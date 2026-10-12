@@ -1,0 +1,8 @@
+# Kişisel veri asla depoya girmez
+veri/
+__pycache__/
+*.pyc
+
+build-exe/
+build/
+dist/

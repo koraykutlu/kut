@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="tr" data-tema="gunduz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kut · Bulut prototipi</title>
+<!-- Kut "Bulut" tasarım prototipi: ag_sablon.html'den bağımsız. Gök WebGL ile çizilir (alan bükmeli fbm + güneşe göre ışık),
+     giriş animasyonu ve sesi WebAudio ile üretilir; dış dosya, yazı tipi ya da ağ isteği yok. -->
+<style>
+:root{
+  --panel:rgba(9,33,68,.94);--panel2:#0E2D5A;--cizgi:rgba(140,180,230,.18);--metin:#EAF2FF;--soluk:#9FB8DA;--silik:#6F8BB2;
+  --vurgu:#5AAEFF;--onv:#06172E;--altin:#F2C14E;--etiket:rgba(7,26,54,.78);
+  --t1:#F08A6E;--t2:#86A9FF;--t3:#3CC9B0;--t4:#B79CFF;--bag:rgba(200,225,255,.55);
+  --yazi:"Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;--baslik:Bahnschrift,"Segoe UI Variable Display","Segoe UI",sans-serif;
+}
+:root[data-tema="gece"]{
+  --panel:rgba(14,28,48,.95);--panel2:#16263B;--cizgi:rgba(120,160,210,.16);--metin:#EAF2FB;--soluk:#93AACA;--silik:#647D9C;
+  --vurgu:#5AAEFF;--onv:#08182B;--altin:#F2C14E;--etiket:rgba(10,22,40,.8);--bag:rgba(150,185,230,.45);
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;background:#0A2D63;color:var(--metin);font-family:var(--yazi);font-size:14px;overflow:hidden}
+#gok{position:fixed;inset:0;width:100%;height:100%;display:block}
+#perde{position:fixed;inset:0;background:radial-gradient(ellipse at 60% 55%,transparent 45%,rgba(4,16,36,.2));pointer-events:none;opacity:0;transition:opacity 1.2s}
+body.calisma #perde{opacity:1}
+
+/* çalışma ekranı (taslak) */
+#ui{position:fixed;inset:0;opacity:0;transition:opacity .9s .1s}
+body.calisma #ui{opacity:1}
+header{position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:center;gap:12px;padding:0 18px;background:var(--panel);border-bottom:1px solid var(--cizgi);
+  transform:translateY(-100%);transition:transform .7s cubic-bezier(.2,.8,.2,1) .15s}
+body.calisma header{transform:none}
+.logo{display:flex;align-items:center;gap:10px;font-family:var(--baslik);letter-spacing:.32em;font-size:15px}
+.ara{flex:0 1 300px;margin-left:auto;border:1px solid var(--cizgi);border-radius:8px;padding:7px 12px;color:var(--soluk);font-size:13px;display:flex;justify-content:space-between}
+.ara kbd{font:11px var(--yazi);color:var(--silik)}
+.ekle{background:var(--vurgu);color:var(--onv);border:0;border-radius:8px;padding:8px 14px;font:500 13px var(--yazi);cursor:pointer}
+aside{position:absolute;top:52px;left:0;bottom:0;width:272px;background:var(--panel);border-right:1px solid var(--cizgi);padding:18px 18px 80px;overflow:auto;
+  transform:translateX(-100%);transition:transform .7s cubic-bezier(.2,.8,.2,1) .3s;scrollbar-width:none}
+body.calisma aside{transform:none}
+aside h3{font:500 12px var(--yazi);color:var(--soluk);margin:18px 0 8px;display:flex;justify-content:space-between}
+aside h3:first-child{margin-top:0}
+aside h3 span{color:var(--silik);font-weight:400}
+.kisi{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--cizgi)}
+.av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:500;color:#0B1A30;flex:none}
+.kisi b{font-weight:500;font-size:14px;display:block}.kisi small{color:var(--soluk);font-size:12px}
+.is{display:flex;gap:9px;padding:6px 0;font-size:13px;line-height:1.35}
+.is i{width:14px;height:14px;border:1.5px solid var(--silik);border-radius:4px;flex:none;margin-top:2px}
+.is em{font-style:normal;color:var(--silik);font-size:11px;display:block}
+.fikir{font-size:13px;padding:5px 0;color:var(--metin)}.fikir::before{content:"◇ ";color:var(--altin)}
+#ag{position:absolute;left:272px;top:52px;width:calc(100% - 272px);height:calc(100% - 52px)}
+#ag text{font:500 12px var(--yazi);fill:var(--metin)}
+#sor{position:absolute;left:calc(50% + 136px);bottom:22px;transform:translateX(-50%);width:min(560px,60vw);background:var(--panel);border:1px solid var(--cizgi);border-radius:12px;padding:12px 16px;color:var(--soluk);font-size:14px;display:flex;justify-content:space-between}
+#sor kbd{font:11px var(--yazi);color:var(--silik)}
+
+/* giriş */
+#giris{position:fixed;inset:0;display:grid;place-items:center;cursor:pointer}
+#giris.bitti{pointer-events:none}
+.amblem{display:flex;flex-direction:column;align-items:center;transform:translateY(-4vh)}
+#gunes{width:min(30vmin,220px);height:min(30vmin,220px);opacity:0;filter:blur(14px);transform:scale(.82)}
+#gunes g.isin{transform-origin:32px 32px;animation:don 60s linear infinite}
+@keyframes don{to{transform:rotate(360deg)}}
+#yazi{margin-top:3.2vmin;font-family:var(--baslik);font-weight:300;font-size:min(9vmin,64px);letter-spacing:.9em;padding-left:.9em;color:#FFF6E0;opacity:0;
+  text-shadow:0 0 24px rgba(242,193,78,.45)}
+#ipucu{position:fixed;bottom:22px;left:0;right:0;text-align:center;color:rgba(234,242,255,.55);font-size:12px;opacity:0;transition:opacity .6s}
+#giris.oynuyor #gunes{animation:gunes 2.2s cubic-bezier(.25,.6,.2,1) .35s forwards}
+#giris.oynuyor #yazi{animation:yazi 1.6s cubic-bezier(.2,.7,.2,1) 2.15s forwards}
+#giris.bitti .amblem{animation:cekil .9s cubic-bezier(.6,0,.4,1) forwards}
+@keyframes gunes{0%{opacity:0;filter:blur(14px) drop-shadow(0 0 0 rgba(242,193,78,0));transform:scale(.82)}
+  60%{opacity:1;filter:blur(0) drop-shadow(0 0 40px rgba(255,214,120,.9));transform:scale(1.03)}
+  100%{opacity:1;filter:blur(0) drop-shadow(0 0 22px rgba(255,214,120,.65));transform:scale(1)}}
+@keyframes yazi{0%{opacity:0;letter-spacing:.9em;padding-left:.9em;transform:translateY(10px)}100%{opacity:1;letter-spacing:.42em;padding-left:.42em;transform:none}}
+@keyframes cekil{to{opacity:0;transform:translateY(-4vh) scale(.9)}}
+
+/* prototip denetimleri */
+#denetim{position:fixed;top:62px;right:14px;display:flex;gap:6px;z-index:5;opacity:0;transition:opacity .6s 1s}
+body.calisma #denetim{opacity:1}
+#denetim button{background:var(--panel);color:var(--metin);border:1px solid var(--cizgi);border-radius:8px;padding:6px 11px;font:12px var(--yazi);cursor:pointer}
+#denetim button[aria-pressed="true"]{border-color:var(--vurgu);color:var(--vurgu)}
+@media (prefers-reduced-motion:reduce){#gunes g.isin{animation:none}}
+</style>
+</head>
+<body>
+<canvas id="gok"></canvas>
+<div id="perde"></div>
+
+<div id="ui">
+  <header>
+    <div class="logo"><svg class="kun" viewBox="0 0 64 64" width="22" height="22"></svg>KUT</div>
+    <div class="ara"><span>Kişi, iş ya da fikir ara…</span><kbd>Ctrl K</kbd></div>
+    <button class="ekle">+ Ekle</button>
+  </header>
+  <aside>
+    <h3>Bugün <span>3</span></h3>
+    <div class="kisi"><div class="av" style="background:var(--t1)">AY</div><div><b>Ayla</b><small>Başvuru son gün: bugün</small></div></div>
+    <div class="kisi"><div class="av" style="background:var(--t2)">DT</div><div><b>Derya hoca</b><small>Başvuru sonucunu sor</small></div></div>
+    <div class="kisi"><div class="av" style="background:var(--t1)">DF</div><div><b>Defne</b><small>37 gündür temas yok</small></div></div>
+    <h3>Açık işler <span>ikinci beyin · 20</span></h3>
+    <div class="is"><i></i><div>Örnek proje grup modu<em>aktif · ornek-proje</em></div></div>
+    <div class="is"><i></i><div>Yedek şifresi Bitwarden'a<em>gelen kutusu · güvenlik</em></div></div>
+    <div class="is"><i></i><div>Admin panelinden mesaj (araştırma)<em>beklemede · ornek-analiz</em></div></div>
+    <h3>Fikirler <span>notes/fikirler.md</span></h3>
+    <div class="fikir">SPL eğitim sitesi</div>
+    <div class="fikir">YouTube kanalı</div>
+  </aside>
+  <svg id="ag"></svg>
+  <div id="sor"><span>Kut'a sor ya da yaz: bugün Derya hocayla konuştum…</span><kbd>/</kbd></div>
+</div>
+
+<div id="denetim">
+  <button data-t="gunduz" aria-pressed="true">Gündüz</button>
+  <button data-t="gece" aria-pressed="false">Gece</button>
+  <button id="b-tekrar">Girişi oynat</button>
+  <button id="b-ses" aria-pressed="true">Ses</button>
+</div>
+
+<div id="giris">
+  <div class="amblem">
+    <svg id="gunes" viewBox="0 0 64 64"></svg>
+    <div id="yazi">KUT</div>
+  </div>
+  <div id="ipucu">Ses için bir kez tıkla</div>
+</div>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const azalt = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// ---- kün işareti (ag_sablon.html'deki kunIsareti ile aynı geometri) ----
+function kun(el, renk, isinGrubu) {
+  let s = "";
+  for (let i = 0; i < 8; i++) {
+    const a = i / 8 * Math.PI * 2 - Math.PI / 2, n = (r, x) => `${32 + Math.cos(x) * r} ${32 + Math.sin(x) * r}`;
+    s += `<path d="M${n(12, a - Math.PI / 8)} L${n(29, a)} L${n(12, a + Math.PI / 8)}Z" fill="${renk}"/>`;
+  }
+  el.innerHTML = (isinGrubu ? `<g class="isin">${s}</g>` : s) +
+    `<circle cx="32" cy="32" r="9" fill="none" stroke="${renk}" stroke-width="3"/><circle cx="32" cy="32" r="3" fill="${renk}"/>`;
+}
+kun($(".kun"), "#F2C14E");
+kun($("#gunes"), "#FFD982", true);
+
+// ---- gök: WebGL boyalı bulutlar ----
+const TEMA = {
+  gunduz: {ust:[.03,.14,.36], ufuk:[.36,.6,.88], isik:[1.,.97,.92], golge:[.38,.48,.66], gunes:[1.,.85,.55], kapsama:.5},
+  gece:   {ust:[.012,.04,.1],  ufuk:[.1,.19,.33], isik:[.6,.68,.82], golge:[.08,.13,.23], gunes:[.95,.76,.4], kapsama:.52}
+};
+const cv = $("#gok"), gl = cv.getContext("webgl", {antialias:false, premultipliedAlpha:false});
+const FS = `precision highp float;
+uniform vec2 R; uniform float T, S, D, K;
+uniform vec2 G;
+uniform vec3 cUst, cUfuk, cIsik, cGolge, cGunes;
+float h(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
+float n(vec2 p){vec2 i=floor(p),f=fract(p);vec2 u=f*f*(3.-2.*f);
+  return mix(mix(h(i),h(i+vec2(1,0)),u.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),u.x),u.y);}
+const mat2 M=mat2(1.6,1.2,-1.2,1.6);
+float fbm(vec2 p){float a=.5,s=0.;for(int i=0;i<6;i++){s+=a*n(p);p=M*p;a*=.5;}return s;}
+float yog(vec2 p){
+  vec2 q=vec2(fbm(p*.6+vec2(T*.012,0.)),fbm(p*.6+vec2(3.1,7.7)));
+  float yakin=fbm(p*vec2(.85,1.45)+.85*q+vec2(T*.01,0.));
+  float uzak=fbm(p*vec2(1.7,2.6)+vec2(11.3,-T*.006)+.5*q);
+  return max(yakin,uzak*.93);
+}
+void main(){
+  vec2 uv=gl_FragCoord.xy/R; float a=R.x/R.y;
+  vec2 p=vec2(uv.x*a,uv.y)*2.2, g=vec2(G.x*a,G.y)*2.2;
+  float dg=length(p-g);
+  float profil=mix(1.3,.72,smoothstep(0.,.95,uv.y));
+  float acik=1.-.45*exp(-dg*dg*1.4);
+  float d=yog(p)*profil*acik;
+  vec2 L=normalize(mix(vec2(0.,1.),normalize(g-p+1e-4),.65));
+  float d2=yog(p+L*.07)*profil*acik;
+  float isik=clamp((d-d2)*8.+.5,0.,1.);
+  float c=pow(smoothstep(K,K+.26,d),.85);
+  vec3 gok=mix(cUfuk,cUst,pow(uv.y,.7));
+  gok+=cGunes*S*(.55*exp(-dg*2.4)+.2*exp(-dg*.7));
+  vec3 bulut=mix(cGolge,cIsik,smoothstep(.05,.95,isik));
+  bulut*=mix(1.,.8,smoothstep(K+.1,K+.45,d));
+  bulut*=mix(.92,1.,smoothstep(0.,.7,uv.y));
+  bulut=mix(bulut,bulut*vec3(1.03,1.,.95),n(p*1.8+7.));
+  bulut+=cGunes*S*(.5*pow(isik,2.2)*exp(-dg*.8)+.3*exp(-dg*1.6)*(1.-c));
+  vec3 col=mix(gok,bulut,c);
+  float aci=n(p*.9+3.)*3.14; vec2 yon=vec2(cos(aci),sin(aci));
+  float firca=n(vec2(dot(p,yon)*24.,dot(p,vec2(-yon.y,yon.x))*3.))+.35*n(vec2(dot(p,yon)*70.,dot(p,vec2(-yon.y,yon.x))*8.));
+  col*=.975+(.03+.09*c)*(firca-.75);
+  col+=(h(floor(gl_FragCoord.xy))-.5)*.035;
+  col*=1.-.32*pow(length(uv-vec2(.5,.55))*1.25,2.2);
+  col=mix(col,cUst*.75,D);
+  gl_FragColor=vec4(col,1.);
+}`;
+let prog, U = {}, olcek = .62, kare = 0, sonCizim = 0;
+const durum = {S:0, D:0, gx:.5, gy:.6, t0:performance.now(), tema:JSON.parse(JSON.stringify(TEMA.gunduz)), hedef:TEMA.gunduz};
+function kur() {
+  if (!gl) { document.body.style.background = "linear-gradient(#0A2D63,#5C9AD6)"; return false; }
+  const sh = (tip, src) => { const s = gl.createShader(tip); gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
+  prog = gl.createProgram();
+  gl.attachShader(prog, sh(gl.VERTEX_SHADER, "attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}"));
+  gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FS));
+  gl.linkProgram(prog); gl.useProgram(prog);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,3,-1,-1,3]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  for (const k of ["R","T","S","D","K","G","cUst","cUfuk","cIsik","cGolge","cGunes"]) U[k] = gl.getUniformLocation(prog, k);
+  boyut(); addEventListener("resize", boyut); return true;
+}
+function boyut() { cv.width = Math.round(innerWidth * olcek); cv.height = Math.round(innerHeight * olcek); gl.viewport(0, 0, cv.width, cv.height); }
+function karis(a, b, t) { return a.map((x, i) => x + (b[i] - x) * t); }
+function ciz(simdi) {
+  requestAnimationFrame(ciz);
+  if (document.hidden || simdi - sonCizim < 33) return;   // ~30 fps yeter; sekme gizliyken durur
+  sonCizim = simdi;
+  const t = durum.tema, h = durum.hedef;
+  for (const k of ["ust","ufuk","isik","golge","gunes"]) t[k] = karis(t[k], h[k], .06);
+  t.kapsama += (h.kapsama - t.kapsama) * .06;
+  gl.uniform2f(U.R, cv.width, cv.height);
+  gl.uniform1f(U.T, azalt ? 0 : (simdi - durum.t0) / 1000);
+  gl.uniform1f(U.S, durum.S); gl.uniform1f(U.D, durum.D); gl.uniform1f(U.K, t.kapsama);
+  gl.uniform2f(U.G, durum.gx, durum.gy);
+  gl.uniform3fv(U.cUst, t.ust); gl.uniform3fv(U.cUfuk, t.ufuk); gl.uniform3fv(U.cIsik, t.isik);
+  gl.uniform3fv(U.cGolge, t.golge); gl.uniform3fv(U.cGunes, t.gunes);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+function tween(ad, hedef, ms, gecikme = 0) {
+  const bas = performance.now() + gecikme, ilk = {v: null};
+  return new Promise(son => {
+    const adim = s => {
+      if (s < bas) return requestAnimationFrame(adim);
+      if (ilk.v === null) ilk.v = durum[ad];
+      const x = Math.min(1, (s - bas) / ms), e = x < .5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
+      durum[ad] = ilk.v + (hedef - ilk.v) * e;
+      x < 1 ? requestAnimationFrame(adim) : son();
+    };
+    requestAnimationFrame(adim);
+  });
+}
+
+// ---- ses: WebAudio ile sentez (rüzgâr, alçak dron, ışık çanı, gong) ----
+let AC = null, sesAcik = true;
+function sesBaglami() { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); return AC; }
+function sesCal() {
+  if (!sesAcik) return;
+  const A = sesBaglami(); if (A.state !== "running") return;
+  const t = A.currentTime + .05, ana = A.createGain(), kmp = A.createDynamicsCompressor();
+  ana.gain.value = .75; ana.connect(kmp).connect(A.destination);
+  // rüzgâr
+  const uz = 4.5, buf = A.createBuffer(1, A.sampleRate * uz, A.sampleRate), v = buf.getChannelData(0);
+  let son = 0; for (let i = 0; i < v.length; i++) { son = (son + .02 * (Math.random() * 2 - 1)) / 1.02; v[i] = son * 3.5; }
+  const gurultu = A.createBufferSource(); gurultu.buffer = buf;
+  const bp = A.createBiquadFilter(); bp.type = "bandpass"; bp.Q.value = .8;
+  bp.frequency.setValueAtTime(260, t); bp.frequency.exponentialRampToValueAtTime(900, t + 2.2); bp.frequency.exponentialRampToValueAtTime(400, t + 4.4);
+  const rg = A.createGain(); rg.gain.setValueAtTime(0, t); rg.gain.linearRampToValueAtTime(.32, t + 1.6); rg.gain.linearRampToValueAtTime(0, t + 4.4);
+  gurultu.connect(bp).connect(rg).connect(ana); gurultu.start(t);
+  // alçak dron (D2 + A2)
+  for (const [f, g] of [[73.42, .07], [110, .045]]) {
+    const o = A.createOscillator(), og = A.createGain(); o.frequency.value = f;
+    og.gain.setValueAtTime(0, t); og.gain.linearRampToValueAtTime(g, t + 1.9); og.gain.exponentialRampToValueAtTime(.0001, t + 5.5);
+    o.connect(og).connect(ana); o.start(t); o.stop(t + 5.6);
+  }
+  // güneş belirirken ışık çanı
+  [587.33, 880, 1174.66, 1760, 2349.3].forEach((f, i) => {
+    for (const sap of [0, 4]) {
+      const o = A.createOscillator(), og = A.createGain(), b = t + 1.35 + i * .07;
+      o.frequency.value = f * Math.pow(2, sap / 1200);
+      og.gain.setValueAtTime(0, b); og.gain.linearRampToValueAtTime(.045 / (1 + i * .5), b + .35); og.gain.exponentialRampToValueAtTime(.0001, b + 3.4);
+      o.connect(og).connect(ana); o.start(b); o.stop(b + 3.5);
+    }
+  });
+  // KUT yazısıyla gong
+  const lp = A.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 2200; lp.connect(ana);
+  [[1, .26], [2, .09], [2.76, .08], [4.07, .045], [5.4, .03]].forEach(([r, g]) => {
+    const o = A.createOscillator(), og = A.createGain(), b = t + 2.25;
+    o.frequency.value = 98 * r;
+    og.gain.setValueAtTime(0, b); og.gain.linearRampToValueAtTime(g, b + .02); og.gain.exponentialRampToValueAtTime(.0001, b + 3.8 / Math.sqrt(r));
+    o.connect(og).connect(lp); o.start(b); o.stop(b + 4);
+  });
+}
+
+// ---- giriş akışı ----
+const giris = $("#giris");
+let bitisZam = null;
+async function girisOynat() {
+  document.body.classList.remove("calisma");
+  giris.className = ""; void giris.offsetWidth;
+  durum.gx = .5; durum.gy = .6; durum.S = 0; durum.D = 0;
+  try { sesBaglami().resume(); } catch (e) {}
+  setTimeout(() => { if (AC && AC.state !== "running") $("#ipucu").style.opacity = 1; }, 300);
+  sesCal();
+  giris.classList.add("oynuyor");
+  tween("S", 1.15, 2200, 350);
+  clearTimeout(bitisZam);
+  bitisZam = setTimeout(girisBitir, azalt ? 600 : 4300);
+}
+function girisBitir() {
+  if (giris.classList.contains("bitti")) return;
+  clearTimeout(bitisZam);
+  $("#ipucu").style.opacity = 0;
+  giris.classList.add("bitti");
+  document.body.classList.add("calisma");
+  tween("S", .6, 1400); tween("D", .08, 1400);
+  tween("gx", .78, 1600); tween("gy", .82, 1600);
+}
+giris.addEventListener("click", () => {
+  // ilk tıklama sesi açar (tarayıcı izni); sonraki tıklama girişi atlar
+  if (AC && AC.state !== "running") { AC.resume().then(() => { $("#ipucu").style.opacity = 0; }); return; }
+  girisBitir();
+});
+addEventListener("keydown", e => { if (!giris.classList.contains("bitti") && (e.key === "Escape" || e.key === " " || e.key === "Enter")) girisBitir(); });
+
+// ---- denetimler ----
+document.querySelectorAll("#denetim [data-t]").forEach(b => b.onclick = () => {
+  document.documentElement.dataset.tema = b.dataset.t; durum.hedef = TEMA[b.dataset.t];
+  document.querySelectorAll("#denetim [data-t]").forEach(x => x.setAttribute("aria-pressed", x === b));
+});
+$("#b-tekrar").onclick = () => { sesBaglami().resume(); girisOynat(); };
+$("#b-ses").onclick = e => { sesAcik = !sesAcik; e.target.setAttribute("aria-pressed", sesAcik); };
+
+// ---- ağ taslağı (sahte veri, yalnız görünüm için) ----
+(function agCiz() {
+  const svg = $("#ag"), K = [["Sen",0,0,-1],["Ayla",-170,-90,1],["Defne",-210,70,1],["Derya",150,-120,2],["Emre",230,-10,2],["Ada",170,120,2],
+    ["Kerem",-40,170,3],["Selim",-60,-200,1],["Bora",40,-230,4],["Berna",260,190,1]];
+  const yerlestir = () => {
+    const kutu = svg.getBoundingClientRect(), w = kutu.width || innerWidth - 272, h = kutu.height || innerHeight - 52, cx = w * .5, cy = h * .5;
+    let s = "";
+    K.slice(1).forEach(k => s += `<line x1="${cx}" y1="${cy}" x2="${cx + k[1]}" y2="${cy + k[2]}" stroke="var(--bag)" stroke-width="${k[3] === 1 ? 2.2 : 1.2}"/>`);
+    K.forEach(k => {
+      const x = cx + k[1], y = cy + k[2], sen = k[3] < 0, r = sen ? 24 : 15, c = sen ? "var(--altin)" : `var(--t${k[3]})`, w2 = k[0].length * 7.4 + 16;
+      s += sen ? `<circle cx="${x}" cy="${y}" r="${r}" fill="var(--panel2)" stroke="${c}" stroke-width="3"/>`
+               : `<circle cx="${x}" cy="${y}" r="${r}" fill="${c}" stroke="rgba(6,20,42,.6)" stroke-width="2"/>`;
+      s += `<rect x="${x - w2 / 2}" y="${y + r + 6}" width="${w2}" height="20" rx="10" fill="var(--etiket)"/><text x="${x}" y="${y + r + 20}" text-anchor="middle">${k[0]}</text>`;
+    });
+    svg.innerHTML = s;
+  };
+  yerlestir(); addEventListener("resize", yerlestir);
+})();
+
+if (kur()) requestAnimationFrame(ciz);
+girisOynat();
+</script>
+</body>
+</html>
