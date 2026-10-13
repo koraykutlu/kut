@@ -3,6 +3,8 @@
 **Kişisel ilişki ağın, yalnız senin bilgisayarında.** Tanıdığın insanları fotoğraflı bir haritada gör, her görüşmeden sonra tek cümle not düş,
 kimi ihmal ettiğini ve bu hafta kime yazman gerektiğini hatırla. Hesap yok, bulut yok; verin düz Markdown dosyaları olarak diskinde durur.
 
+Tanıtım sayfası: **[koraykutlu.github.io/kut](https://koraykutlu.github.io/kut/)** · İndir: [son sürüm](https://github.com/koraykutlu/kut/releases/latest)
+
 ![Kut: harita, kişi kartı, bu hafta ve Pusula](docs/img/kut-demo.gif)
 
 > *Kut (formerly "Ağım") is a local, private personal-network app: a photo map of the people you know, contact log, relationship graph,
