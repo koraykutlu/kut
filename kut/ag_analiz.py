@@ -10,7 +10,6 @@ import os
 import queue
 import re
 import shutil
-import subprocess
 import threading
 import time
 from datetime import date, datetime
@@ -18,13 +17,14 @@ from datetime import date, datetime
 import ag_cekirdek as c
 import ag_ice_aktar as ia
 import ag_kapi as kapi
-import ag_sir
+import ag_model as mdl
+import ag_soz as soz
 import ag_tutarlilik as tut
 
 KLASOR = os.path.join(ia.DEPO, "analiz")
 DURUM = os.path.join(KLASOR, "durum.json")
 AZAMI_KARAKTER = 450_000
-VARSAYILAN_MODEL = "claude-haiku-5-5"  # hızlı ve ucuz; ayarlar.json'da "analiz_modeli" ile değiştirilebilir
+VARSAYILAN_MODEL = mdl.VARSAYILAN_MODEL["analiz"]  # Claude için hızlı ve ucuz; ayarlar.json'da "analiz_modeli" ile değiştirilebilir
 _kuyruk = queue.Queue()
 _kilit = threading.Lock()
 _isci = None
@@ -99,11 +99,8 @@ def _is_guncelle(isid, **alan):
 
 
 def claude_yolu():
-    yol = shutil.which("claude")
-    if yol:
-        return yol
-    aday = os.path.join(os.path.expanduser("~"), ".local", "bin", "claude.exe" if os.name == "nt" else "claude")
-    return aday if os.path.exists(aday) else None
+    """Geriye uyum: seçili sağlayıcı kullanılabilirse yolu (ya da True), değilse None. Yeni kod mdl.hazir() kullanır."""
+    return mdl.yol_bul(mdl.secili()) if mdl.hazir() else None
 
 
 def kuyruga_ekle(ham, sohbet, ad_eslesme, veri_klasoru):
@@ -203,25 +200,9 @@ def analiz_et(ham, sohbet, ad_eslesme, veri_klasoru):
 
 
 def _model(istem, okuma_klasoru=None):
-    """Claude Code CLI'ı araçsız çalıştırır; okuma_klasoru verilirse yalnız o klasörde Read açık (PDF/görsel belgeler için)."""
-    cli = claude_yolu()
-    if not cli:
-        raise RuntimeError("claude komutu bulunamadı (Claude Code kurulu mu?)")
+    """Seçili sağlayıcıyı araçsız çalıştırır; okuma_klasoru verilirse yalnız o klasörde salt-okur dosya okuma (PDF/görsel belgeler için, yalnız Claude)."""
     os.makedirs(KLASOR, exist_ok=True)
-    model = ia.ayarlar().get("analiz_modeli") or VARSAYILAN_MODEL
-    kapali = ["Bash", "Edit", "Write", "Glob", "Grep", "WebFetch", "WebSearch", "NotebookEdit", "Task"] + ([] if okuma_klasoru else ["Read"])
-    arg = [cli, "-p", "--output-format", "json", "--no-session-persistence", "--model", model, "--disallowedTools", *kapali]
-    if okuma_klasoru:
-        arg += ["--allowedTools", "Read"]
-    istem = ag_sir.temizle(istem, "analiz istemi")   # sır kapısı: uzak modele giden her istem
-    p = subprocess.run(arg, input=istem.encode("utf-8"), capture_output=True, cwd=okuma_klasoru or KLASOR,
-                       timeout=900, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
-    if p.returncode != 0:
-        raise RuntimeError("claude hata verdi: " + p.stderr.decode("utf-8", "replace")[-300:])
-    cikti = json.loads(p.stdout.decode("utf-8", "replace"))
-    if cikti.get("is_error"):
-        raise RuntimeError("claude: " + str(cikti.get("result"))[:300])
-    return _json_cikar(cikti.get("result", ""))
+    return _json_cikar(mdl.cagir("analiz", istem, zaman_asimi=900, json_cikti=True, okuma_klasoru=okuma_klasoru, cwd=KLASOR, yer="analiz istemi").metin)
 
 
 def _json_cikar(metin):
@@ -254,7 +235,7 @@ def uygula(sonuc, ad_eslesme, sohbet, asistan):
             continue
         k = c.kisi_oku(os.path.join(c.KISILER, kid + ".md"))
         o = lambda alan, deger, gerekce="": oneriler.append({"kisi": kid, "alan": alan, "deger": deger, "gerekce": gerekce, "kaynak": kaynak})
-        eski_ozet = v.get("umut_ile")   # ESKİ şema alan adı: yalnız önbellekteki eski analizler için geriye uyum
+        eski_ozet = next((x for kx, x in v.items() if str(kx).endswith("_ile") and isinstance(x, str)), None)   # ESKİ şema: "<ad>_ile" biçimli özet alanı; yalnız önbellekteki eski analizler için geriye uyum
         if temiz_metin(v.get("iliski_ozeti") or eski_ozet):
             o("ozet", temiz_metin(v.get("iliski_ozeti") or eski_ozet))
         yeni_et = [x for x in _temiz_etiket(v.get("etiketler")) if x not in (k.get("etiketler") or [])]
@@ -474,6 +455,8 @@ Cevabının EN SONUNA şu blok: <kayitlar>[...]</kayitlar>. Öğeler (yalnız ku
  {{"kisi": "<id>", "islem": "sonraki", "metin": "adım", "tarih": "YYYY-AA-GG ya da boş"}}
  {{"kisi": "<id>", "islem": "yakinlik", "deger": 0-3}}                      (yalnız kullanıcı yakınlığı açıkça söylerse)
  {{"kisi": "<id>", "islem": "alan", "alan": "kurum|rol|eposta|telefon|linkedin|x", "deger": "..."}}
+ {{"kisi": "<id>", "islem": "soz", "yon": "ben|o", "metin": "kısa söz", "tarih": "YYYY-AA-GG ya da boş"}}   (söz takibi: "ben" = kullanıcı o kişiye söz verdi,
+   "o" = o kişi kullanıcıya söz verdi; yalnız açık gelecek taahhüt, soru/olumsuz/geçmiş değil. Bu işlem YAZILMAZ: uygulama kullanıcıya "söz olarak ekleyeyim mi?" diye sorar)
  {{"kisi": "<id>", "islem": "iliski", "hedef": "<id>", "tip": "{tipler}"}}
  Ağda olmayan kişi için "kisi" yerine "yeni": {{"ad": "Ad Soyad", "tur": "{turler}", "kurum": "", "rol": ""}} yaz (aynı mesajdaki sonraki
  öğelerde de aynı "yeni" adını kullan; yalnız kişiyi açmak için "islem": "ekle"). Soyadı bilinmiyorsa yalnız ad yeter ("Ayşe"); kullanıcının söylemediği soyadını akrabadan TAHMİN ETME.
@@ -499,7 +482,8 @@ def sohbet(soru, kisi_id="", oturum=""):
         ozet.append(f"- {k['id']}: {k.get('ad')} · {c.TURLER.get(k.get('tur'), ['?'])[0]} · yakınlık {k.get('yakinlik')}"
                     f"{(' · görüşme: ' + c.SIKLIK[k['temas_sikligi']][1] + ' (KULLANICI BEYANI; son temas tarihine bakma)') if k.get('temas_sikligi') in c.SIKLIK else (' · son temas ' + k['son_temas'] if k.get('son_temas') else '')}"
                     f"{' · görüşü: ' + str(k['kullanici_gorusu']) if k.get('kullanici_gorusu') else ''}"
-                    f"{' · sonraki: ' + str(k.get('sonraki_adim')) if k.get('sonraki_adim') else ''}{' · ' + str(k.get('kurum')) if k.get('kurum') else ''}")
+                    f"{' · sonraki: ' + str(k.get('sonraki_adim')) if k.get('sonraki_adim') else ''}{' · ' + str(k.get('kurum')) if k.get('kurum') else ''}"
+                    f"{' · açık söz: ' + soz.sohbet_ozeti(k.get('govde')) if soz.acik_sozler(k.get('govde')) else ''}")   # yalnız kapıdan geçen (izinli) kişi
     ozet = [kp.temizle(x) for x in ozet]
     baglam, acik = "", kp.acik_mi(kisi_id)
     if c.gecerli_id(kisi_id) and os.path.exists(os.path.join(c.KISILER, kisi_id + ".md")):
@@ -514,32 +498,32 @@ def sohbet(soru, kisi_id="", oturum=""):
         vault_blok = kp.temizle(ag_vault.sohbet_blogu(kisi_id if acik else ""))
     except Exception:
         vault_blok = ""
-    istem = f"(Bugün {date.today().isoformat()} {gun}) {soru}" if oturum else f"Bugün {date.today().isoformat()} {gun}. Ağdaki kişiler ({len(ozet)}):\n" + "\n".join(ozet) + baglam + (f"\n\n{vault_blok}" if vault_blok else "") + f"\n\nKullanıcının sorusu: {soru}"
-    if oturum and baglam:
+    # Claude oturum devam ettirir (kısa istem); oturumsuz sağlayıcılarda bağlam her turda yeniden verilir, geçmiş Kut'ta tutulur
+    # Geçmiş her turda kapıdan geçer: sonradan kapatılan/hariç tutulan kişiyi anan turlar atılır, kalanlar sır süzgecinden geçer.
+    # Kapı listesi ya da sağlayıcı değiştiyse geçmişin tamamı silinir (kilitlenince de silinir: ag_kilit.kapaninca).
+    if not isinstance(oturum, str):
+        oturum = ""
+    mdl.gecmis_imza_denetle((mdl.secili(), tuple(sorted(kp.red)), tuple(sorted(str(h) for h in c.haric_listesi()))))
+    gecmis = [] if mdl.oturum_destekli() else mdl.gecmis_al(oturum) if oturum else []
+    gecmis = [(s, a) for s, a in gecmis if not kp.anilir_mi(f"{s}\n{a}")]
+    kisa = bool(oturum) and mdl.claude_oturum_gecerli(oturum) if mdl.oturum_destekli() else False   # kilitle iptal edilen oturum devam etmez: tam bağlam
+    onceki = ("\n\nKonuşmanın şimdiye kadarı:\n" + kp.temizle(mdl.gecmis_blogu(gecmis))) if gecmis else ""
+    istem = f"(Bugün {date.today().isoformat()} {gun}) {soru}" if kisa else f"Bugün {date.today().isoformat()} {gun}. Ağdaki kişiler ({len(ozet)}):\n" + "\n".join(ozet) + baglam + (f"\n\n{vault_blok}" if vault_blok else "") + onceki + f"\n\nKullanıcının sorusu: {soru}"
+    if kisa and baglam:
         istem = (f"(Bugün {date.today().isoformat()} {gun}; şu an açık kişi: {kisi_id})\n{kp.temizle(tut.kesin_bilinenler_blogu([kisi_id]))}\n\n{soru}" if acik
                  else f"(Bugün {date.today().isoformat()} {gun}; açık kişinin kartı gizlilik nedeniyle gönderilmiyor)\n\n{soru}")
-    cli = claude_yolu()
-    if not cli:
-        raise RuntimeError("claude komutu bulunamadı (Claude Code kurulu mu?)")
     os.makedirs(SOHBET_KLASOR, exist_ok=True)
-    model = ia.ayarlar().get("sohbet_modeli") or ia.ayarlar().get("analiz_modeli") or VARSAYILAN_MODEL
     with kapi.kopya() as veri:   # model gerçek veri klasörünü değil, kapıdan geçmiş geçici kopyayı okur; çıkışta silinir
-        arg = [cli, "-p", "--output-format", "json", "--model", model, "--add-dir", veri,
-               "--allowedTools", "Read", "Grep", "Glob",
-               "--disallowedTools", "Bash", "Edit", "Write", "WebFetch", "WebSearch", "NotebookEdit", "Task",
-               "--append-system-prompt", SOHBET_ROL.format(asistan=asistan, ben=(b.get("ad") or "Kullanıcı").split()[0], veri=veri,
-                                                          karakter=b.get("karakter") or VARSAYILAN_KARAKTER, ben_id=b.get("id") or "ben",
-                                                          tipler="|".join(c.TIPLER), turler="|".join(t for t in c.TURLER if t != "ben"))]
-        if oturum and re.fullmatch(r"[0-9a-f-]{20,60}", oturum):
-            arg += ["--resume", oturum]
-        p = subprocess.run(arg, input=ag_sir.temizle(istem, "sohbet istemi").encode("utf-8"), capture_output=True, cwd=SOHBET_KLASOR, timeout=240,
-                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
-    if p.returncode != 0:
-        raise RuntimeError("claude hata verdi: " + p.stderr.decode("utf-8", "replace")[-300:])
-    cikti = json.loads(p.stdout.decode("utf-8", "replace"))
-    if cikti.get("is_error"):
-        raise RuntimeError("claude: " + str(cikti.get("result"))[:300])
-    cevap = cikti.get("result", "")
+        rol = SOHBET_ROL.format(asistan=asistan, ben=(b.get("ad") or "Kullanıcı").split()[0], veri=veri,
+                                karakter=b.get("karakter") or VARSAYILAN_KARAKTER, ben_id=b.get("id") or "ben",
+                                tipler="|".join(c.TIPLER), turler="|".join(t for t in c.TURLER if t != "ben"))
+        r = mdl.cagir("sohbet", istem, sistem=rol, zaman_asimi=240, oturum=oturum, oturum_kalici=True, veri_klasoru=veri,
+                      cwd=SOHBET_KLASOR, yer="sohbet istemi")
+    cevap = r.metin
+    if not mdl.oturum_destekli():   # oturumsuz sağlayıcı: konuşma geçmişi Kut'ta tutulur, sonraki turda istemle verilir
+        oturum_id = oturum if gecmis else mdl.yeni_oturum_id()
+        mdl.gecmis_ekle(oturum_id, soru, cevap)
+        r.oturum = oturum_id
     oneri, kayitlar = 0, []
     k = re.search(r"<kayitlar>(.*?)</kayitlar>", cevap, re.S)
     if k:
@@ -560,4 +544,4 @@ def sohbet(soru, kisi_id="", oturum=""):
             oneri = c.cikarim_ekle(adaylar)
         except ValueError:
             pass
-    return {"cevap": cevap, "oturum": cikti.get("session_id", ""), "oneri": oneri, "kayitlar": kayitlar}
+    return {"cevap": cevap, "oturum": r.oturum, "oneri": oneri, "kayitlar": kayitlar}

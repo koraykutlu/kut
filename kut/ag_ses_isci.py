@@ -3,17 +3,23 @@
 Kut sunucusu (ag_ses.py) bunu kendi Python'uyla değil, modelin kurulu olduğu ortamın Python'uyla başlatır:
   <ema ortamı>/python.exe ag_ses_isci.py oku     → {"metin", "hiz"}   → {"wav": base64}
   <whisper ortamı>/python.exe ag_ses_isci.py yaz → {"pcm": base64 float32 16 kHz mono, "ipucu"} → {"metin"}
+  <ortam>/python.exe ag_ses_isci.py indir oku|yaz [model] REPO COMMIT_SHA → kurulum sihirbazı (ag_ses_kur.py): paketi içe aktarır, model
+                                                         ağırlıklarını commit sha'ya sabitleyerek HF_HOME'a indirir; stdout'a {"indirilen": bayt} yazar
 Her şey bu bilgisayarda çalışır; model dosyaları yalnız yerel önbellekten okunur (HF_HUB_OFFLINE=1). Ses diske yazılmaz.
+Tek istisna "indir": kullanıcının onayladığı kurulum sırasında Hugging Face'ten model indirir (çevrimdışı kilit açık değildir).
 """
 import base64
 import io
 import json
 import os
+import re
 import sys
+import threading
 import wave
 from pathlib import Path
 
-os.environ["HF_HUB_OFFLINE"] = "1"
+if sys.argv[1:2] != ["indir"]:   # indirme kipi dışında hiçbir şey ağa çıkmaz
+    os.environ["HF_HUB_OFFLINE"] = "1"
 os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
 
 sys.stdout.reconfigure(encoding="utf-8")
@@ -70,11 +76,12 @@ def yaz_hazirla():
 
     model_adi = sys.argv[2] if len(sys.argv) > 2 else "large-v3"
     hesap = sys.argv[3] if len(sys.argv) > 3 else "int8_float16"
+    cihaz = "cuda"
     try:
         model = WhisperModel(model_adi, device="cuda", compute_type=hesap)
     except Exception as e:  # GPU yoksa ya da bellek yetmezse işlemcide yavaş ama çalışır
         print(f"GPU açılamadı ({e}); işlemciye geçiliyor", file=sys.stderr)
-        model = WhisperModel(model_adi, device="cpu", compute_type="int8")
+        model, cihaz = WhisperModel(model_adi, device="cpu", compute_type="int8"), "cpu"
 
     # Whisper altyazı verisiyle eğitildi: sessizlikte "Altyazı M.K.", "izlediğiniz için teşekkürler" gibi şeyler uydurur
     import re
@@ -103,12 +110,68 @@ def yaz_hazirla():
         sonuc = re.sub(r"[\s.,]*(altyaz[ıi]\s*m\.?\s*k\.?|altyaz[ıi])[\s.]*$", "", sonuc, flags=re.I).strip()   # sona yapışan imza
         return {"metin": sonuc}
 
-    isle({"pcm": base64.b64encode(np.zeros(16000, np.float32).tobytes()).decode()})  # ısınma
+    isinma = {"pcm": base64.b64encode(np.zeros(16000, np.float32).tobytes()).decode()}
+    try:
+        isle(isinma)  # ısınma
+    except Exception as e:  # kart yüklendi ama CUDA kitaplıkları eksik olabilir: ilk çözümlemede anlaşılır
+        if cihaz != "cuda":
+            raise
+        print(f"GPU çalışmadı ({e}); işlemciye geçiliyor", file=sys.stderr)
+        model = WhisperModel(model_adi, device="cpu", compute_type="int8")
+        isle(isinma)
     return isle
+
+
+def indir():
+    """Kurulum sihirbazı için: paketin içe aktarılabildiğini doğrular ve model ağırlıklarını indirir (HF_HOME önbelleğine)."""
+    tur, model = sys.argv[2] if len(sys.argv) > 2 else "", sys.argv[3] if len(sys.argv) > 3 else ""
+    repo, sha = sys.argv[4] if len(sys.argv) > 4 else "", sys.argv[5] if len(sys.argv) > 5 else ""
+    if not (repo and re.fullmatch(r"[0-9a-f]{40}", sha)):
+        raise ValueError("model deposu ve 40 haneli commit sha gerekli (sabitlenmemiş indirme yapılmaz)")
+    kok = Path(os.environ.get("HF_HOME") or Path.home() / ".cache" / "huggingface")
+
+    def boyut():
+        return sum(f.stat().st_size for f in kok.rglob("*") if f.is_file()) if kok.is_dir() else 0
+    baslangic, bitti = boyut(), threading.Event()
+
+    def izle():  # yarım kalan (.incomplete) dosyalar da sayılır
+        while not bitti.wait(1.0):
+            try:
+                yaz({"indirilen": max(0, boyut() - baslangic)})
+            except OSError:
+                pass
+    threading.Thread(target=izle, daemon=True).start()
+    try:
+        from huggingface_hub import hf_hub_download, snapshot_download
+        if tur == "oku":
+            from ema_lightning.api import REPO
+            if REPO != repo:
+                raise ValueError(f"paketin model deposu ({REPO}) Kut'un sabitlediğinden ({repo}) farklı; indirilmedi")
+            for dosya in ("config.json", "ema.pt", "decoder.pt"):
+                hf_hub_download(repo, dosya, revision=sha)   # commit sha'ya sabit: depo sonradan değişse de aynı dosyalar
+        elif tur == "yaz":
+            import ctranslate2  # noqa: F401
+            # faster-whisper'ın download_model'inin indirdiği dosyalar; revision=sha ile sabitlenir
+            snapshot_download(repo, revision=sha, allow_patterns=["config.json", "preprocessor_config.json", "model.bin", "tokenizer.json", "vocabulary.*"])
+        else:
+            raise ValueError("tür: oku | yaz")
+        # çevrimdışı çalışma (HF_HUB_OFFLINE) varsayılan 'main' referansını arar; sha'yla inen önbelleğe bu referans yazılır
+        ref = kok / "hub" / ("models--" + repo.replace("/", "--")) / "refs" / "main"
+        ref.parent.mkdir(parents=True, exist_ok=True)
+        ref.write_text(sha, encoding="utf-8")
+    finally:
+        bitti.set()
+    yaz({"indirilen": max(0, boyut() - baslangic), "bitti": True})
 
 
 def main():
     tur = sys.argv[1] if len(sys.argv) > 1 else ""
+    if tur == "indir":
+        try:
+            return indir()
+        except Exception as e:
+            print(f"{type(e).__name__}: {e}", file=sys.stderr)
+            sys.exit(1)
     try:
         isle = {"oku": oku_hazirla, "yaz": yaz_hazirla}[tur]()
     except Exception as e:

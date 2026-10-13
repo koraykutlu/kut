@@ -1,4 +1,8 @@
 """Uzak model kapısı (ag_kapi): reddedilen kişi ne kopyada ne de sohbet isteminde bulunur. Gerçek `claude` çağrılmaz."""
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+import _yalitim  # noqa: E402,F401  (kut'tan önce: LOCALAPPDATA/AGIM_VERI geçici)
+
 import json
 import os
 import subprocess
@@ -13,6 +17,7 @@ import ag_analiz as an  # noqa: E402
 import ag_cekirdek as c  # noqa: E402
 import ag_ice_aktar as ia  # noqa: E402
 import ag_kapi as kapi  # noqa: E402
+import ag_model as mdl  # noqa: E402
 
 
 def kisi(kid, ad, **alan):
@@ -151,7 +156,7 @@ class KapiTest(unittest.TestCase):
             if hata:
                 raise hata
             return subprocess.CompletedProcess(arg, 0, json.dumps({"result": "tamam", "session_id": "s"}).encode(), b"")
-        with mock.patch.object(an, "claude_yolu", return_value="claude"), mock.patch.object(an.subprocess, "run", side_effect=sahte):
+        with mock.patch.object(mdl, "yol_bul", return_value="claude"), mock.patch.object(mdl, "hazir", return_value=True), mock.patch.object(mdl.subprocess, "run", side_effect=sahte):
             try:
                 an.sohbet("Kimle görüşeyim?", kisi_id, oturum)
             except RuntimeError:
@@ -185,6 +190,90 @@ class KapiTest(unittest.TestCase):
     def test_hata_olsa_da_gecici_klasor_silinir(self):
         y = self.sohbet_cagir(hata=RuntimeError("patladi"))
         self.assertFalse(os.path.exists(y["dizin"]))
+
+    def test_oturumsuz_saglayicida_baglam_her_turda_verilir(self):
+        ia.ayar_yaz({"saglayici": "codex"})
+        istemler = []
+
+        def sahte(gorev, istem, **kw):
+            istemler.append((istem, kw))
+            return mdl.Cevap(f"cevap{len(istemler)}")
+        with mock.patch.object(mdl, "hazir", return_value=True), mock.patch.object(mdl, "cagir", side_effect=sahte):
+            r1 = an.sohbet("Birinci soru?")
+            r2 = an.sohbet("Ikinci soru?", "", r1["oturum"])
+        self.assertTrue(r1["oturum"])
+        self.assertEqual(r2["oturum"], r1["oturum"])
+        self.assertIn("Ada Deneme", istemler[1][0])            # ağ bağlamı yeniden verildi
+        self.assertIn("Birinci soru?", istemler[1][0])         # geçmiş de
+        self.assertNotIn("Test Kişi", istemler[1][0])          # kapı yine geçerli
+        self.assertTrue(istemler[1][1]["veri_klasoru"])
+
+    def _oturumsuz_sohbet(self):
+        ia.ayar_yaz({"saglayici": "codex"})
+        istemler = []
+
+        def sahte(gorev, istem, **kw):
+            istemler.append(istem)
+            return mdl.Cevap(f"cevap{len(istemler)}")
+        mock.patch.object(mdl, "hazir", return_value=True).start()
+        mock.patch.object(mdl, "cagir", side_effect=sahte).start()
+        mdl.gecmis_temizle()
+        return istemler
+
+    def test_gecmis_her_turda_kapidan_gecer(self):
+        istemler = self._oturumsuz_sohbet()
+        try:
+            r1 = an.sohbet("Birinci soru?")
+            # geçmişe sonradan reddedilen kişiyi anan bir tur ve bir sır girmiş olsun
+            mdl.gecmis_ekle(r1["oturum"], "Test Kişi ile ne konuştuk?", "gizli-not-test-kisi içeriği")
+            mdl.gecmis_ekle(r1["oturum"], "anahtar?", "api_key=sk-ant-api03-ABCDEFGHIJKLMNOPQRSTUVWXYZ0123")
+            an.sohbet("Ikinci soru?", "", r1["oturum"])
+        finally:
+            mock.patch.stopall()
+        son = istemler[1]
+        self.assertIn("Birinci soru?", son)
+        self.assertNotIn("Test Kişi", son)
+        self.assertNotIn("gizli-not-test-kisi", son)
+        self.assertNotIn("sk-ant-api03-ABCDEFGHIJKLMNOPQRSTUVWXYZ0123", son)
+
+    def test_kapi_degisince_gecmis_silinir(self):
+        istemler = self._oturumsuz_sohbet()
+        try:
+            r1 = an.sohbet("Birinci ozel soru?")
+            kisi("yeni-kapali", "Yeni Kapalı", remote_allowed="false")   # kapı listesi değişti
+            r2 = an.sohbet("Ikinci soru?", "", r1["oturum"])
+            an.sohbet("Ucuncu soru?", "", r2["oturum"])
+        finally:
+            mock.patch.stopall()
+        self.assertNotIn("Birinci ozel soru?", istemler[1])   # geçmiş silindi
+        self.assertIn("Ikinci soru?", istemler[2])             # yeni kapıyla biriken geçmiş sürer
+
+    def test_kilitlenince_gecmis_silinir(self):
+        istemler = self._oturumsuz_sohbet()
+        import ag_kilit
+        mdl._kilit_bagla()
+        try:
+            r1 = an.sohbet("Birinci soru?")
+            ag_kilit.kapat()
+            an.sohbet("Ikinci soru?", "", r1["oturum"])
+        finally:
+            mock.patch.stopall()
+        self.assertNotIn("Birinci soru?", istemler[1])
+
+    def test_belge_ekle_claude_disinda_pdf_icin_bastan_hata_verir(self):
+        import base64
+        import ag_sunucu as sunucu
+        ia.ayar_yaz({"saglayici": "codex"})
+        g = {"id": "ada-deneme", "ad": "cv.pdf", "veri": base64.b64encode(b"%PDF-1.4 x").decode()}
+        with mock.patch.object(mdl, "hazir", return_value=True), mock.patch.object(an, "belge_kuyruga_ekle") as kuyruk:
+            with self.assertRaisesRegex(ValueError, "PDF/görsel belge okuyamaz"):
+                sunucu.belge_ekle(dict(g))
+            self.assertFalse(os.path.exists(os.path.join(c.BELGELER, "ada-deneme", "cv.pdf")))   # dosya da yazılmadı
+            kuyruk.assert_not_called()
+            r = sunucu.belge_ekle({**g, "ozetle": False})   # özetleme istenmiyorsa yalnız saklanır
+            self.assertFalse(r["analiz"])
+            r = sunucu.belge_ekle({"id": "ada-deneme", "ad": "not.txt", "veri": base64.b64encode(b"metin").decode()})
+            self.assertTrue(r["analiz"])   # metin belgeleri Claude dışında da özetlenir
 
     def test_analiz_reddedileni_uzak_modele_vermez(self):
         with mock.patch.object(an, "_model") as m, mock.patch.object(an, "claude_yolu", return_value="claude"):

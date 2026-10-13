@@ -1,4 +1,8 @@
 """ag_vault testleri: geçici sahte vault, ağ isteği ve model yok. Köprü salt okur; ayarsız kapalı; hariç yollar okunmaz."""
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+import _yalitim  # noqa: E402,F401  (kut'tan önce: LOCALAPPDATA/AGIM_VERI geçici)
+
 import hashlib
 import json
 import os

@@ -1,6 +1,7 @@
 """Kut strateji okuması: hedefler + ağ + keşif (vekiller, etkinlikler) + ikinci beyin → güçlü modelle "görmediğin hamleler".
 
-Model: ayarlar.json → strateji_modeli (varsayılan claude-opus-5-5), Claude Code üzerinden; kişi dosyalarını yalnız okuyabilir.
+Model: seçili sağlayıcı (ag_model; varsayılan Claude Code, ayarlar.json → strateji_modeli, varsayılan claude-opus-5-5); kişi dosyalarını yalnız okuyabilir
+(Claude salt-okur araçlarla, diğer sağlayıcılar kapıdan geçmiş kopyanın metniyle).
 Her hamle bir hedefe bağlı ve kanıtlıdır (kişi id, vekil önergesi, etkinlik adresi, kasa işi); kanıtsız hamle elenir.
 Sonuç <veri>/strateji/<tarih-saat>.md: okunur Markdown + sonda makine için JSON bloğu. Kullanıcı her hamleyi
 "yaptım / yapmadım / işe yaradı / işe yaramadı" diye kapatır; sonraki okuma bu sonuçları görür (öğrenme döngüsü).
@@ -8,7 +9,6 @@ Sonuç <veri>/strateji/<tarih-saat>.md: okunur Markdown + sonda makine için JSO
 import json
 import os
 import re
-import subprocess
 import threading
 from datetime import date, datetime, timedelta
 
@@ -17,10 +17,10 @@ import ag_cekirdek as c
 import ag_hedef as hd
 import ag_ice_aktar as ia
 import ag_kapi as kapi
-import ag_sir
+import ag_model as mdl
 import ag_kesif as ks
 
-VARSAYILAN_MODEL = "claude-opus-5-5"
+VARSAYILAN_MODEL = mdl.VARSAYILAN_MODEL["strateji"]
 SONUCLAR = {"yaptim": "Yaptım", "yapmadim": "Yapmadım", "ise_yaradi": "İşe yaradı", "ise_yaramadi": "İşe yaramadı", "gecersiz": "Geçersiz / yanlış"}
 _durum = {"calisiyor": False, "baslangic": "", "hata": "", "son": ""}
 _kilit = threading.Lock()
@@ -57,7 +57,7 @@ def klasor():
 
 
 def model_adi():
-    return ia.ayarlar().get("strateji_modeli") or VARSAYILAN_MODEL
+    return mdl.model_etiketi("strateji")
 
 
 def _ag_ozeti(kp):
@@ -202,9 +202,8 @@ def _yaz(j, dosya):
 
 
 def calistir():
-    cli = an.claude_yolu()
-    if not cli:
-        raise RuntimeError("claude komutu bulunamadı (Claude Code kurulu mu?)")
+    if not mdl.hazir():
+        raise RuntimeError(mdl.hazir_degil_mesaji())
     hedef_idler = {h["id"] for h in hd.hepsi(("aktif", "taslak", "beklemede"))}
     if not hedef_idler:
         raise RuntimeError("önce en az bir hedef ekle")
@@ -214,18 +213,8 @@ def calistir():
     with kapi.kopya() as veri:   # model gerçek veri klasörünü değil, kapıdan geçmiş geçici kopyayı okur; çıkışta silinir
         rol = ROL.format(asistan=b.get("asistan") or "Claude", ben=(b.get("ad") or "Kullanıcı").split()[0],
                          karakter=b.get("karakter") or "sıcak, doğrudan, meraklı; kendi gerekçeli görüşünü söyler", veri=veri)
-        arg = [cli, "-p", "--output-format", "json", "--no-session-persistence", "--model", model_adi(), "--add-dir", veri,
-               "--allowedTools", "Read", "Grep", "Glob",
-               "--disallowedTools", "Bash", "Edit", "Write", "WebFetch", "WebSearch", "NotebookEdit", "Task",
-               "--append-system-prompt", rol]
-        p = subprocess.run(arg, input=ag_sir.temizle(istem(), "strateji istemi").encode("utf-8"), capture_output=True, cwd=calisma, timeout=1200,
-                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
-    if p.returncode != 0:
-        raise RuntimeError("claude hata verdi: " + p.stderr.decode("utf-8", "replace")[-300:])
-    cikti = json.loads(p.stdout.decode("utf-8", "replace"))
-    if cikti.get("is_error"):
-        raise RuntimeError("claude: " + str(cikti.get("result"))[:300])
-    j = _denetle(an._json_cikar(cikti.get("result", "")), hedef_idler)
+        r = mdl.cagir("strateji", istem(), sistem=rol, zaman_asimi=1200, json_cikti=True, veri_klasoru=veri, cwd=calisma, yer="strateji istemi")
+    j = _denetle(an._json_cikar(r.metin), hedef_idler)
     simdi = datetime.now()
     j.update(tarih=simdi.isoformat(timespec="minutes"), model=model_adi())
     dosya = f"{simdi:%Y-%m-%d-%H%M}.md"

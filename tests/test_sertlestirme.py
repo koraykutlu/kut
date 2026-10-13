@@ -1,4 +1,8 @@
 """Güvenlik sertleştirme testleri (SSRF, şablon enjeksiyonu, yol aşımı, zip bombası, başlıklar, günlük). Yalnız sahte veri; gerçek ağ yok."""
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+import _yalitim  # noqa: E402,F401  (kut'tan önce: LOCALAPPDATA/AGIM_VERI geçici)
+
 import email
 import http.client
 import io

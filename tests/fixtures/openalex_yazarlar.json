@@ -1,0 +1,14 @@
+{"meta": {"count": 3, "page": 1, "per_page": 5},
+ "results": [
+  {"id": "https://openalex.org/A0000000001", "display_name": "Ada Deneme", "orcid": "https://orcid.org/0000-0001-0000-0001",
+   "works_count": 36, "cited_by_count": 841,
+   "last_known_institutions": [{"id": "https://openalex.org/I1", "display_name": "Istanbul Technical University", "country_code": "TR"}],
+   "topics": [{"display_name": "Algorithms", "count": 10, "subfield": {"display_name": "Artificial Intelligence"}, "field": {"display_name": "Computer Science"}},
+              {"display_name": "Graphs", "count": 6, "subfield": {"display_name": "Computational Theory and Mathematics"}, "field": {"display_name": "Computer Science"}}]},
+  {"id": "https://openalex.org/A0000000002", "display_name": "Ada Deneme", "orcid": null,
+   "works_count": 3, "cited_by_count": 4,
+   "last_known_institutions": [{"id": "https://openalex.org/I2", "display_name": "Universidad Ejemplo", "country_code": "ES"}],
+   "topics": []},
+  {"id": "https://openalex.org/A0000000003", "display_name": "Deniz Ada", "orcid": null, "works_count": 9, "cited_by_count": 10,
+   "last_known_institutions": [], "topics": []}
+ ]}

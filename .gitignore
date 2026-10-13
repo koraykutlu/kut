@@ -6,3 +6,5 @@ __pycache__/
 build-exe/
 build/
 dist/
+.claude/worktrees/
+tests/yerel_yasakli_adlar.txt

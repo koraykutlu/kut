@@ -3,3 +3,7 @@
 *.py text eol=lf
 *.md text eol=lf
 *.html text eol=lf
+# Kisisel gunluk/degerlendirme dosyalari yayin arsivine (git archive) girmez
+YOL-HARITASI.md export-ignore
+DEGERLENDIRME-*.md export-ignore
+tests/yerel_yasakli_adlar.txt export-ignore

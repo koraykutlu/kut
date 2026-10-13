@@ -8,6 +8,8 @@ Okul bağdaştırıcıları (OKULLAR sözlüğü; profildeki `okul` alanı anaht
 - yeditepe (ÖRNEK bağdaştırıcı): ders programı (yeditepeders.com, herkese açık kopya) → derslerinin hocaları + "## Dersler";
   fakülte akademik kadro sayfası → unvan, e-posta, fotoğraf. Site çalışmıyorsa sonra yeniden denenir.
   Yeni okul eklemek için OKULLAR'a aynı alanlarla bir kayıt eklemek yeter (ders_json/kadro sayfası biçimi uyumluysa).
+- ag_okullar.py kayıt defteri: ortak arayüzlü bağdaştırıcılar (İTÜ vb.); kayıtları dosya sonunda OKULLAR'a eklenir ve ders_hocalari
+  `tur` alanı olan okulları oraya yönlendirir. Okuldan bağımsız OpenAlex/ORCID zenginleştirmesi ag_akademik.py (kapalı gelir; Doğrula'ya düşer).
 """
 import html
 import http.cookiejar
@@ -24,10 +26,11 @@ from datetime import date, datetime
 
 import ag_cekirdek as c
 import ag_ice_aktar as ia
+import ag_akademik
 
 DURUM = os.path.join(ia.DEPO, "kaynak.json")
 ONBELLEK = os.path.join(ia.DEPO, "kaynak")
-TARAYICI = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36 Kut/1"
+TARAYICI = "Mozilla/5.0 (compatible; Kut/1; yerel kisisel ag araci)"
 YENIDEN_DENE_SAAT = 6
 
 # Okul bağdaştırıcıları: anahtar = profildeki `okul` alanının sade() hâli. Aşağıdaki "yeditepe" kaydı bir ÖRNEKTİR.
@@ -46,6 +49,7 @@ OKULLAR = {
         "eposta_alani": "yeditepe.edu.tr",
         "profil_ornek": "yeditepe.edu.tr/tr/akademik-kadro/<n>",
         "etkinlik_url": "https://yeditepe.edu.tr/tr/etkinlikler",
+        "kurum_en": ["yeditepe university"],   # OpenAlex'teki kurum adı (küçük harf); ag_akademik "kesin" eşleşmesi için
     },
 }
 
@@ -145,11 +149,23 @@ def sinirli_oku(y, azami):
     return ham
 
 
+ISTEK_ARALIGI = 0.5   # aynı ana makineye iki istek arası en az bu kadar saniye (nazik tarama; sınır test için 0 yapılabilir)
+_son_istek = {}
+
+
+def _hiz_sinirla(host):
+    bekle = ISTEK_ARALIGI - (time.monotonic() - _son_istek.get(host, -1e9))
+    if bekle > 0:
+        time.sleep(bekle)
+    _son_istek[host] = time.monotonic()
+
+
 def _istek(url, veri=None, basliklar=None, acici=None, zaman=25, azami=AZAMI_OKUMA, kaynak=None):
     try:
         _guvenli_url(url, kaynak)
     except ValueError as e:
         raise OSError("adres reddedildi: " + str(e))
+    _hiz_sinirla(urllib.parse.urlparse(url).hostname)
     r = urllib.request.Request(url, data=veri, headers={"User-Agent": TARAYICI, **(basliklar or {})})
     with (acici or guvenli_acici()).open(r, timeout=zaman) as y:
         return sinirli_oku(y, azami), y.headers.get("Content-Type", "")
@@ -177,14 +193,20 @@ def _ders_verisi(yenile=False):
     return json.load(open(yol, encoding="utf-8"))
 
 
-def _ders_coz(s):
-    """'ISE 426-1' → ('ISE 426', '1'); 'ISE 426' → ('ISE 426', None)."""
-    m = re.match(r"^\s*([A-Za-z]{2,5})\s*(\d{3}[A-Za-z]?)\s*(?:[-/.ş]\s*(\d+))?\s*$", s or "")
+def _ders_coz(s, harfli=False):
+    """'ISE 426-1' → ('ISE 426', '1'); 'ISE 426' → ('ISE 426', None). harfli=True: şube harf de olabilir ('CS 201-A')."""
+    sube = r"([0-9A-Za-z]{1,3})" if harfli else r"(\d+)"
+    m = re.match(r"^\s*([A-Za-z]{2,5})\s*(\d{3}[A-Za-z]?)\s*(?:[-/.ş]\s*" + sube + r")?\s*$", s or "")
     return (f"{m.group(1).upper()} {m.group(2).upper()}", m.group(3)) if m else (None, None)
 
 
 def ders_hocalari(dersler):
-    """Profildeki derslerin hocaları: {ad: [ders satırı, ...]}."""
+    """Profildeki derslerin hocaları: {ad: {satirlar, kodlar, bolum}}. Kayıt defterindeki (ag_okullar) okulda bağdaştırıcı çalışır;
+    Yeditepe (OKULLAR'daki tür alanı olmayan kayıt) eski yolu izler."""
+    ay = okul_ayar()
+    if ay and ay.get("tur"):
+        import ag_okullar as ok
+        return ok.hocalar(ay, dersler)
     veri = _ders_verisi()
     sonuc, bulunamayan = {}, []
     for d in dersler:
@@ -468,7 +490,8 @@ def doldur(kilit, yenile_cb, zorla=False):
     if bulunamayan:
         ozet["hata"].append("programda bulunamayan ders: " + ", ".join(bulunamayan))
     d = durum()
-    kaynak_ders = f"{ay['ders_kaynak']} ({ay['donem_adi']} ders programı, {date.today():%d.%m.%Y})"
+    donem_adi = ag_okullar.KAYIT[ay["anahtar"]].donem_adi_al() if ay.get("tur") else ay["donem_adi"]
+    kaynak_ders = f"{ay['ders_kaynak']} ({donem_adi} ders programı, {date.today():%d.%m.%Y})"
 
     # kadro sayfası (ağ isteği kilit dışında)
     kartlar, hata_kadro, acici = {}, {}, None
@@ -523,7 +546,7 @@ def doldur(kilit, yenile_cb, zorla=False):
                 kid = c.bos_slug(ad)
                 bolum = h["bolum"].replace(" Lisans Programı", "")
                 alanlar = {"ad": ad, "foto": "", "tur": "akademi", "kurum": f"{ay['kisa']} · {bolum}" if bolum else ay["ad"],
-                           "rol": "Öğretim elemanı", "alan": ["egitim"], "nereden": [okul], "yakinlik": "1"}
+                           "rol": "Öğretim elemanı", "alan": ["egitim"], "nereden": [okul], "yakinlik": "0"}   # yakınlık yalnız kullanıcı onayıyla artar
                 govde = c.yeni_govde(ad, f"{kaynak_ders}; Kut otomatik ekledi.")
                 ozet["eklenen"].append(ad)
                 sorular.append({"kisi": kid, "alan": "soru", "deger": f"{ad} ile dersi dışında birebir tanışıklığın var mı?",
@@ -587,7 +610,20 @@ def doldur(kilit, yenile_cb, zorla=False):
             c.cikarim_ekle(sorular)
         if ozet["eklenen"] or ozet["guncellenen"]:
             yenile_cb()
-    d["son_doldurma"] = {"zaman": time.time(), "tarih": datetime.now().isoformat(timespec="seconds"),
+    # okuldan bağımsız akademik zenginleştirme (OpenAlex/ORCID; yalnız Kaynaklar'da açıksa): kişi dosyasına yazılmaz, Doğrula'ya düşer
+    ozet["dogrulanacak"] = []
+    if ag_akademik.acik() and hocalar:
+        on_kisiler = c.kisileri_oku()
+        hedefler = [(k["id"], k["ad"]) for k in (_kisi_esle(ad, on_kisiler) for ad in hocalar) if k]
+        try:
+            yeni = ag_akademik.oneriler(hedefler, ay, d)
+            if yeni:
+                with kilit:
+                    c.cikarim_ekle(yeni)
+                ozet["dogrulanacak"] = [y["kisi"] for y in yeni]
+        except Exception as e:   # API çöktü: okul doldurma sonucunu bozma
+            ozet["hata"].append(f"akademik profil sorgusu yapılamadı: {str(e)[:80]}")
+    d["son_doldurma"] = {"zaman": time.time(),"tarih": datetime.now().isoformat(timespec="seconds"),
                          "ozet": {x: len(y) for x, y in ozet.items()}}
     _durum_yaz(d)
     return ozet
@@ -645,3 +681,8 @@ def otomatik_gerekli():
         return True
     return any(isinstance(v, dict) and v.get("durum") == "hata" and time.time() - v.get("zaman", 0) > YENIDEN_DENE_SAAT * 3600
                for k, v in d.items() if k.startswith("kadro:"))
+
+
+# Kayıt defterindeki okullar açılır listeye buradan girer (en sonda: ag_okullar, ag_kaynak'a yalnız çağrı anında ihtiyaç duyar).
+import ag_okullar  # noqa: E402
+OKULLAR.update(ag_okullar.okul_kayitlari())

@@ -1,4 +1,8 @@
 """Kaynaklar paneli: etkinlik kapısı (taze kurulum ağa çıkmaz), /api/kaynaklar kilit + CSRF, kalıcılık. Gerçek ağ yok."""
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+import _yalitim  # noqa: E402,F401  (kut'tan önce: LOCALAPPDATA/AGIM_VERI geçici)
+
 import http.client
 import json
 import os
@@ -92,7 +96,7 @@ class EtkinlikKapisiTest(unittest.TestCase):
     def test_durum_okullari_OKULLAR_dan_listeler(self):
         with mock.patch.dict(kn.OKULLAR, {"deneme": {"ad": "Deneme Üni", "ders_kaynak": "x.example"}}):
             d = ks.kaynaklar_durum()
-        self.assertEqual({k["id"] for k in d["kaynaklar"]}, {"vekilpedia", "etkinlik"})
+        self.assertEqual({k["id"] for k in d["kaynaklar"]}, {"vekilpedia", "etkinlik", "akademik"})
         self.assertIn("deneme", {o["anahtar"] for o in d["okullar"]})
 
 

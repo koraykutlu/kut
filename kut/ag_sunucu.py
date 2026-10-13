@@ -24,17 +24,28 @@ from urllib.parse import parse_qs, urlsplit
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ag_cekirdek as c  # noqa: E402
 import ag_ice_aktar as ia  # noqa: E402
+import ag_takvim as tk  # noqa: E402
+import ag_linkedin as li  # noqa: E402
+import ag_ders_yapistir as dy  # noqa: E402
+import ag_ice_ortak as ort  # noqa: E402
 import ag_analiz as an  # noqa: E402
+import ag_model as mdl  # noqa: E402
 import ag_kaynak as kn  # noqa: E402
+import ag_ders_girdi as dg  # noqa: E402
+import ag_soz as sz  # noqa: E402
+import ag_kapi as kapi  # noqa: E402
 import ag_baglam as bg  # noqa: E402
 import ag_tutarlilik as tu  # noqa: E402
 import ag_vault as vault  # noqa: E402
+import ag_kasa_kisi as kk  # noqa: E402
 import ag_ses as ses  # noqa: E402
+import ag_ses_kur as sesk  # noqa: E402
 import ag_kilit as kl  # noqa: E402
 import ag_hedef as hd  # noqa: E402
 import ag_kesif as ks  # noqa: E402
 import ag_strateji as st  # noqa: E402
 import ag_guncelle as gu  # noqa: E402
+import ag_demo  # noqa: E402
 import goc  # noqa: E402
 
 PORT = 47318
@@ -99,7 +110,14 @@ def ilk_ad():
 
 
 def ben_kaydet(g):
-    alanlar = {k: g[k] for k in ("ad", "kurum", "rol", "asistan", "temas_basligi", "ilgiler", "karakter", "okul", "dersler") if k in g}
+    alanlar = {k: g[k] for k in ("ad", "kurum", "rol", "asistan", "temas_basligi", "ilgiler", "karakter", "okul", "dersler", "dogum_gunu") if k in g}
+    if alanlar.get("dogum_gunu") not in (None, ""):   # YYYY-AA-GG ya da AA-GG; başka hiçbir şey ben.md'ye yazılmaz
+        dgn = str(alanlar["dogum_gunu"]).strip()
+        if not re.fullmatch(r"(?:\d{4}-)?(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])", dgn):
+            raise ValueError("dogum_gunu: YYYY-AA-GG biçiminde olmalı")
+        alanlar["dogum_gunu"] = dgn
+    if "dersler" in alanlar:   # "bu dönem ISE 424 ve MATH 101 alıyorum" gibi serbest yazılan öğeler ders koduna ayrılır; kod olanlar aynen kalır
+        alanlar["dersler"] = dg.liste_temizle(c.liste_yap(alanlar["dersler"]))
     ham = foto_coz(g.get("foto_veri"))
     if ham:
         alanlar["foto"] = c.foto_kaydet(c.ben_id(), ham)
@@ -294,7 +312,7 @@ def aday_ekle(g):
     ia.adaylar_yaz(havuz)
     bag = grup_baglari(havuz)
     isler = []
-    if ia.ayarlar().get("otomatik_analiz", True) and an.claude_yolu():
+    if ia.ayarlar().get("otomatik_analiz", True) and mdl.hazir():
         for h, es in sohbet_kisileri.items():
             # sohbetin önceden eklenmiş üyeleri de analize girsin
             for a in havuz.values():
@@ -334,11 +352,13 @@ def grup_baglari(havuz, azami=12):
 def analiz_baslat(g):
     """Kişi kartındaki 'Analiz et': kişinin kayıtlı sohbetleri için analiz kuyruğa girer."""
     k = kisi_bul(g.get("id"))
+    if not kapi.Kapi().acik_mi(g.get("id")):
+        raise ValueError("Bu kişi yapay zekâya gönderilmiyor (haric.md ya da kişi kartındaki kilit); analiz uzak modele gitmez.")
     hamlar = k.get("wa_sohbetler") or []
     if not hamlar:
         raise ValueError("Bu kişi için saklanmış WhatsApp sohbeti yok; önce sohbeti 'İçe aktar'dan yükle.")
-    if not an.claude_yolu():
-        raise ValueError("claude komutu bulunamadı.")
+    if not mdl.hazir():
+        raise ValueError(mdl.hazir_degil_mesaji())
     havuz = ia.adaylar()
     isler = []
     for h in hamlar:
@@ -405,6 +425,8 @@ def belge_ekle(g):
         raise ValueError("desteklenen: PDF, PNG/JPG ekran görüntüsü, .txt, .md, .html, .docx")
     if not ham or len(ham) > 25_000_000:
         raise ValueError("dosya boş ya da 25 MB'tan büyük")
+    if uz in an.OKUNAN_UZANTI and g.get("ozetle", True) and mdl.hazir() and not mdl.SAGLAYICILAR[mdl.secili()]["belge"]:
+        raise ValueError(f"{mdl.SAGLAYICILAR[mdl.secili()]['ad']} PDF/görsel belge okuyamaz; sağlayıcıyı Claude Code yap ya da belgeyi metin olarak ekle.")
     klasor = os.path.join(c.BELGELER, kid)
     os.makedirs(klasor, exist_ok=True)
     temel = re.sub(r"[^\w.-]+", "-", os.path.splitext(ad)[0], flags=re.U)[:60] or "belge"
@@ -414,10 +436,11 @@ def belge_ekle(g):
         dosya = f"{date.today():%Y%m%d}-{temel}-{i}{uz}"; i += 1
     with open(os.path.join(klasor, dosya), "wb") as f:
         f.write(ham)
-    analiz = bool(an.claude_yolu()) and g.get("ozetle", True)
+    kapali = not kapi.Kapi().acik_mi(kid)   # kişi yapay zekâya gönderilmiyorsa belge yalnız saklanır, özetlenmez
+    analiz = bool(mdl.hazir()) and g.get("ozetle", True) and not kapali
     if analiz:
         an.belge_kuyruga_ekle(kid, dosya)
-    return {"dosya": dosya, "analiz": analiz}
+    return {"dosya": dosya, "analiz": analiz, "uzak_kapali": kapali}
 
 
 def ozgecmis(g):
@@ -433,14 +456,25 @@ def bolum_sil(g):
 
 
 def sor(g):
+    if any(not isinstance(g.get(k) or "", str) for k in ("soru", "kisi", "oturum")):
+        raise ValueError("soru, kisi ve oturum metin olmalı")
     soru = " ".join(str(g.get("soru") or "").split())[:4000]
     if not soru:
         raise ValueError("soru boş")
+    onerilen = ders_onerisi(soru)   # kod bulunsa bile yazılmaz: kullanıcı sohbetteki düğmeyle onaylar; asıl soru yine cevaplanır
+    soz_yerel = soz_onerisi(soru)   # yerel ayrıştırma; yazılmaz, kullanıcı sohbetteki düğmeyle onaylar
     try:
         r = an.sohbet(soru, g.get("kisi") or "", g.get("oturum") or "")
     except RuntimeError as e:
         raise ValueError(str(e))
+    if onerilen:
+        r["ders_onay"] = {"kodlar": onerilen, "soru": ders_onay_sorusu(onerilen)}
     liste = r.pop("kayitlar", [])
+    model_soz = [o for o in liste if o.get("islem") == "soz"]   # modelin söz çıkarımı da yazılmaz, yalnız onay önerisi olur
+    liste = [o for o in liste if o.get("islem") != "soz"]
+    soz_onay = soz_onerileri_birlestir(soz_yerel, model_soz)
+    if soz_onay:
+        r["soz_onay"] = soz_onay
     r["kaydedilen"], r["atlanan"] = [], []
     if liste:
         with kilit:
@@ -576,9 +610,151 @@ def kaynak_doldur(g):
     return o
 
 
+def _ders_modeli(istem):
+    """Yerel ayıklama kod bulamazsa mevcut model katmanından ders kodu ister (yeni model çağrı yolu yok)."""
+    return an._model(istem)
+
+
+def ders_onerisi(soru):
+    """Sohbet cümlesinde ders kodu varsa kodları döndürür; HİÇBİR ŞEY yazmaz. Belirsiz doğal dil cümlesi henüz kullanıcı beyanı değildir,
+    kullanıcı onaylayınca (ders_onayla) beyan olur. Soru, olumsuz ve geçmiş cümlelerde boş."""
+    return dg.ayikla(soru, model=_ders_modeli)
+
+
+def ders_onay_sorusu(kodlar):
+    ad = f"{', '.join(kodlar[:-1])} ve {kodlar[-1]}" if len(kodlar) > 1 else kodlar[0]
+    return f"{ad}’i bu dönemki derslerine ekleyeyim mi?"
+
+
+def ders_onayla(g):
+    """Sohbetteki onay düğmesi: kodları profil derslerine ekler (artık kullanıcı beyanı), seçili okulun bağdaştırıcısıyla hocaları bulup ağa
+    ekler (Doğrula'ya soru düşer). Okul seçili değilse önce okulu sorar. Gelen kodlar sunucuda yeniden doğrulanır."""
+    ham = g.get("kodlar")
+    if not isinstance(ham, list) or not ham or len(ham) > 20 or not all(isinstance(x, str) for x in ham):
+        raise ValueError("kodlar: ders kodu listesi olmalı")
+    kodlar = []
+    for x in ham:
+        x = " ".join(x.split()).upper()
+        if not re.fullmatch(dg.KOD, x) or re.match(r"[^\W\d_]+", x).group(0) in dg.YASAK_ONEK:
+            raise ValueError("geçersiz ders kodu: " + x[:20])
+        if x not in kodlar:
+            kodlar.append(x)
+    oturum = str(g.get("oturum") or "")
+    with kilit:
+        mevcut = c.liste_yap(c.ben().get("dersler"))
+        yeni = dg.birlestir(mevcut, kodlar)
+        if yeni != mevcut:
+            c.ben_yaz({"dersler": yeni})
+        statik_yenile()
+    cevap = {"oturum": oturum, "oneri": 0, "kaydedilen": [], "atlanan": [], "ders_kodlari": kodlar}
+    ay = kn.okul_ayar()
+    if not ay:
+        liste = ", ".join(o["kisa"] if o.get("kisa") else o["ad"] for o in kn.OKULLAR.values())
+        cevap["cevap"] = (f"{len(kodlar)} dersi profiline yazdım ({', '.join(kodlar)}). Hocalarını bulmam için hangi okulda olduğunu bilmem gerek: "
+                          f"şu an desteklenenler {liste}. Ayarlar (⚙) → Kaynaklar → Okul bağdaştırıcısı'ndan seçersen hocalar kendiliğinden gelir. "
+                          "Okulun listede yoksa söyle, README'deki rehberle bağdaştırıcı eklenebilir.")
+        cevap["okul_sor"] = True
+        return cevap
+    try:
+        hocalar, bulunamayan = kn.ders_hocalari(kodlar)
+    except (OSError, ValueError) as e:
+        cevap["cevap"] = f"{len(kodlar)} dersi profiline yazdım ama {ay['ad']} ders programına şu an ulaşamadım ({str(e)[:80]}). Sonra kendiliğinden yeniden denerim."
+        return cevap
+    o = kaynak_doldur({"zorla": False})
+    parca = [f"{len(kodlar)} ders, {len(hocalar)} hoca buldum ({ay['ad']})"]
+    if hocalar:
+        parca.append(": " + ", ".join(sorted(hocalar)[:8]) + (" …" if len(hocalar) > 8 else ""))
+    mesaj = "".join(parca) + "."
+    if o.get("eklenen") or o.get("guncellenen"):
+        mesaj += f" Ağa ekledim/güncelledim: {len(o.get('eklenen', []))} yeni, {len(o.get('guncellenen', []))} güncel kişi."
+    if o.get("dogrulanacak"):
+        mesaj += f" {len(o['dogrulanacak'])} akademik profil önerisi Doğrula'da onayını bekliyor."
+    if bulunamayan:
+        mesaj += " Programda bulamadıklarım: " + ", ".join(bulunamayan) + "."
+    mesaj += " Hocalarla tanışıklığın hakkındaki sorular Doğrula'da."
+    cevap["cevap"] = mesaj
+    cevap["ders_ozeti"] = {"ders": len(kodlar), "hoca": len(hocalar), "bulunamayan": bulunamayan}
+    return cevap
+
+
+def soz_onerisi(soru):
+    """Sohbet cümlesinde söz ("Ayşe'ye kitabı cuma göndereceğim") varsa yerel ayrıştırmayla öneri döndürür; HİÇBİR ŞEY yazmaz. Belirsiz doğal dil
+    cümlesi henüz kullanıcı beyanı değildir, kullanıcı onaylayınca (soz_onayla) beyan olur. Soru, olumsuz, geçmiş ve koşullu cümlelerde boş."""
+    return sz.oner(soru, c.kisileri_oku())
+
+
+def soz_onerileri_birlestir(yerel, model):
+    """Yerel ve modelin söz önerilerini doğrulayıp tekilleştirir (aynı kişi+yön yerelden kalır); zaten açık olan söz önerilmez. En çok 3."""
+    kisiler = c.kisileri_oku()
+    sonuc = list(yerel)
+    for o in model:
+        d = sz.oneri_dogrula(o, kisiler)
+        if d and not any(x["kisi"] == d["kisi"] and x["yon"] == d["yon"] for x in sonuc):
+            sonuc.append(d)
+    acik = {}
+    for o in sonuc:
+        if o["kisi"] not in acik:
+            try:
+                acik[o["kisi"]] = {(s["yon"], c.sade(s["metin"])) for s in sz.acik_sozler(kisi_bul(o["kisi"]).get("govde", ""))}
+            except ValueError:
+                acik[o["kisi"]] = set()
+    return [o for o in sonuc if (o["yon"], c.sade(o["metin"])) not in acik[o["kisi"]]][:sz.ONERI_AZAMI]
+
+
+def _soz_yaz(kid, g):
+    k = kisi_bul(kid)
+    if c.haric_mi(k):
+        raise ValueError(f"{k.get('ad') or kid} hariç listesinde")
+    sz.kisi_ekle(kid, g.get("yon"), g.get("metin"), g.get("son") or "")
+    return k.get("ad") or kid
+
+
+def soz_ekle(g):
+    """Kişi kartındaki Sözler formu (kullanıcı beyanı, doğrudan yazılır): {id, yon: ben|o, metin, son?}."""
+    ad = _soz_yaz(g.get("id"), g)
+    return {"id": g["id"], "cevap": f"{ad} için söz kaydedildi."}
+
+
+def soz_onayla(g):
+    """Sohbetteki onay düğmesi: önerilen sözü kişiye yazar (artık kullanıcı beyanı). Gelen öneri sunucuda yeniden doğrulanır
+    (kişi ağda mı, hariç mi, yön, metin, tarih); {kisi, yon, metin, son?, oturum?}."""
+    o = sz.oneri_dogrula(g, c.kisileri_oku())
+    if not o:
+        raise ValueError("söz önerisi geçersiz")
+    ad = _soz_yaz(o["kisi"], o)
+    gunluk("kut sohbeti söz onayı: 1 söz")
+    return {"kisi": o["kisi"], "oturum": str(g.get("oturum") or ""),
+            "cevap": f"{ad} için söz kaydedildi: {o['metin']}" + (f" (son: {o['son']})" if o["son"] else "")}
+
+
+def soz_durum(g):
+    """Kişi kartında 'Tamamla' / 'İptal': {id, sira, metin, durum: tamam|iptal}. Satır silinmez (kapanış tarihiyle kalır)."""
+    kisi_bul(g.get("id"))
+    sz.kisi_kapat(g["id"], g.get("sira"), g.get("durum"), g.get("metin"))
+    return {"id": g["id"]}
+
+
+def kisi_uzak(g):
+    """Kişi kartındaki '🔒 Bu kişi yapay zekâya gönderilmez' anahtarı: {id, kapali: true|false} → `remote_allowed: false` (kapalıysa) ya da alanı kaldırır.
+    Kapı imzası değiştiği için bellekteki sohbet geçmişi hemen silinir; istemci de Claude oturumunu sıfırlamalı (`oturum_sifirla`)."""
+    k = kisi_bul(g.get("id"))
+    if not isinstance(g.get("kapali"), bool):
+        raise ValueError("kapali: true ya da false olmalı")
+    govde = k.pop("govde")
+    c.surum_al(g["id"])
+    if g["kapali"]:
+        k["remote_allowed"] = "false"
+    else:
+        k.pop("remote_allowed", None)
+    c.kisi_yaz(g["id"], k, govde)
+    mdl.gecmis_temizle()
+    mdl.claude_oturumlari_iptal_et()   # sunucu tarafı: istemci oturum kimliğini sıfırlamasa da eski Claude konuşması --resume edilmez
+    return {"id": g["id"], "kapali": g["kapali"], "oturum_sifirla": True}
+
+
 def _otomatik_doldur():
     try:   # keşif kaynakları (vekil haftalık, etkinlik 12 saatte bir) ve haftalık strateji okuması (aktif hedef varsa)
-        ks.yenile(bitince=lambda: st.baslat() if st.gerekli() and an.claude_yolu() and ia.ayarlar().get("otomatik_strateji", True) else None)
+        ks.yenile(bitince=lambda: st.baslat() if st.gerekli() and mdl.hazir() and ia.ayarlar().get("otomatik_strateji", True) else None)
     except Exception:
         gunluk("keşif: " + hata_izi())
     try:
@@ -620,6 +796,21 @@ def ses_isit(g):
     return {}
 
 
+def saglayici_ayarla(g):
+    """Model sağlayıcı seçimi: {saglayici?, modeller?: {codex: "..."}}; kurulu olmayan seçilemez. Dönen: sağlayıcı durumu."""
+    return mdl.ayarla(g)
+
+
+def ses_kurulum_baslat(g):
+    """Ses ortamı kurulumu: yalnız kullanıcının açık onayıyla ({onay: true}); parcalar boşsa eksik olanlar, yaz_model boşsa önerilen."""
+    return sesk.baslat(g.get("parcalar") or ses.eksik() or None, g.get("yaz_model"), g.get("onay") is True)
+
+
+def ses_kurulum_ayar(g):
+    """Kurulum sorusuna cevap: {cevap: "sorma" | "sor"} (Bir daha sorma / yeniden sor)."""
+    return sesk.soru_yaz(g.get("cevap"))
+
+
 def ayar(g):
     a = ia.ayarlar()
     a["ben_adlari"] = [x.strip() for x in g.get("ben_adlari", []) if x.strip()]
@@ -631,13 +822,15 @@ ISLEMLER = {
     "/api/ben": ben_kaydet, "/api/kisi": kisi_kaydet, "/api/temas": temas, "/api/kisi/arsivle": kisi_arsivle,
     "/api/iliski": iliski_ekle, "/api/iliski/sil": iliski_sil,
     "/api/ice-aktar": ice_aktar, "/api/aday/ekle": aday_ekle, "/api/aday/gizle": aday_gizle,
-    "/api/aday/temizle": adaylari_temizle, "/api/ayar": ayar, "/api/analiz/baslat": analiz_baslat,
+    "/api/aday/temizle": adaylari_temizle, "/api/ayar": ayar, "/api/saglayici": saglayici_ayarla, "/api/analiz/baslat": analiz_baslat,
     "/api/cikarim": cikarim, "/api/sor": sor, "/api/cikarim/hepsi": cikarim_hepsi, "/api/belge": belge_ekle,
     "/api/ozgecmis": ozgecmis, "/api/bolum/sil": bolum_sil, "/api/kaynak/doldur": kaynak_doldur,
     "/api/ses/oku": ses_oku, "/api/ses/yaz": ses_yaz, "/api/ses/isit": ses_isit,
+    "/api/ders/onayla": ders_onayla,
+    "/api/soz": soz_ekle, "/api/soz/durum": soz_durum, "/api/soz/onayla": soz_onayla, "/api/kisi/uzak": kisi_uzak,
 }
-DEGISTIRMEYEN = {"/api/sor", "/api/analiz/baslat", "/api/ice-aktar", "/api/aday/gizle", "/api/aday/temizle", "/api/ayar"}
-KILITSIZ = {"/api/sor", "/api/kaynak/doldur", "/api/ses/oku", "/api/ses/yaz", "/api/ses/isit"}  # uzun sürer; yazmazlar ya da kilidi kendileri alır
+DEGISTIRMEYEN = {"/api/sor", "/api/analiz/baslat", "/api/ice-aktar", "/api/aday/gizle", "/api/aday/temizle", "/api/ayar", "/api/saglayici"}
+KILITSIZ = {"/api/sor", "/api/ders/onayla", "/api/kaynak/doldur", "/api/ses/oku", "/api/ses/yaz", "/api/ses/isit"}  # uzun sürer; yazmazlar ya da kilidi kendileri alır
 
 
 GUVENLIK_BASLIKLARI = (
@@ -715,6 +908,28 @@ class Isleyici(BaseHTTPRequestHandler):
             return self._gonder(400, {"hata": str(e)})
         return self._gonder(200, {"ok": True}, cerez=kl.cerez_yaz(belirtec))
 
+    def _yonlendir(self, adres):
+        self.send_response(302)
+        self.send_header("Location", adres)
+        self.send_header("Content-Length", "0")
+        self.send_header("Cache-Control", "no-store")
+        for ad, deger in GUVENLIK_BASLIKLARI:
+            self.send_header(ad, deger)
+        self.end_headers()
+
+    def _demo_sayfa(self):
+        """Demo önizlemesi ("Deniz'in salısı"): yalnız kilit açıkken ve /api/demo/baslat sonrası. Sayfa gerçek oturum anahtarını DEĞİL,
+        demo anahtarını taşır; gerçek uçlar onu reddeder. Veri geçici demo klasöründen gelir, kullanıcının verisine bakılmaz."""
+        if not self._acik():
+            return self._yonlendir("/")
+        s = ag_demo.sayfa_verisi()
+        if s is None:
+            return self._yonlendir("/")
+        veri, meta, demo_anahtar = s
+        html = c.sayfa(veri, {"anahtar": demo_anahtar, "sihirbaz": {"bitti": True}, "arayuz_sesi": arayuz_sesi_acik(), "bilinen": {}, "demo": meta},
+                       {"acik": True, "kurulu": True, "sure_dk": kl.sure_dk()})
+        return self._gonder(200, html.encode("utf-8"), "text/html; charset=utf-8")
+
     def _gonder(self, kod, govde, tip="application/json; charset=utf-8", cerez=None):
         veri = govde if isinstance(govde, bytes) else json.dumps(govde, ensure_ascii=False).encode("utf-8")
         self.send_response(kod)
@@ -740,16 +955,38 @@ class Isleyici(BaseHTTPRequestHandler):
                     html = c.sayfa(kl.bos_veri(), None, {"kurulu": kl.kurulu()})
                     return self._gonder(200, html.encode("utf-8"), "text/html; charset=utf-8")
                 with kilit:
-                    html = c.sayfa(c.veri_hazirla(), {"anahtar": ANAHTAR}, {"acik": True, "kurulu": True, "sure_dk": kl.sure_dk()})
+                    html = c.sayfa(c.veri_hazirla(), {"anahtar": ANAHTAR, "sihirbaz": {"bitti": sihirbaz_bitti()}, "arayuz_sesi": arayuz_sesi_acik(), "bilinen": sihirbaz_bilinen()},
+                                   {"acik": True, "kurulu": True, "sure_dk": kl.sure_dk()})
                 return self._gonder(200, html.encode("utf-8"), "text/html; charset=utf-8")
             if yol == "/api/nabiz":
                 return self._gonder(200, {"ok": True})
-            if not self._acik(dokun=yol not in ("/api/analiz", "/api/pusula/durum")):   # durum yoklamaları oturumu canlı tutmasın
+            if yol == "/demo":
+                return self._demo_sayfa()
+            if not self._acik(dokun=yol not in ("/api/analiz", "/api/pusula/durum", "/api/ses/kurulum")):   # durum yoklamaları oturumu canlı tutmasın
                 return self._gonder(401, {"hata": "kilitli"})
+            if yol == "/api/demo/durum":   # demo sayfasının canlı tutma yoklaması (demo anahtarı)
+                bek = ag_demo.anahtar()
+                if not bek or self.headers.get("X-Ag-Anahtar") != bek:
+                    return self._gonder(403, {"hata": "anahtar"})
+                return self._gonder(200, ag_demo.durum())
+            if yol == "/api/demo/ses":   # ön üretimli anlatım sesi (varsa); çerez + etkin demo yeter, sahne kimliği beyaz listeden
+                dosya = ag_demo.ses_dosyasi(parse_qs(urlsplit(self.path).query).get("s", [""])[0]) if ag_demo.aktif() else None
+                if not dosya:
+                    return self._gonder(404, {"hata": "yok"})
+                with open(dosya, "rb") as f:
+                    return self._gonder(200, f.read(), ag_demo.ses_tipi(dosya))
             if yol == "/api/ses":
                 if self.headers.get("X-Ag-Anahtar") != ANAHTAR:
                     return self._gonder(403, {"hata": "anahtar"})
                 return self._gonder(200, {**ses.durum(), "mikrofon": (ia.ayarlar().get("ses") or {}).get("mikrofon", "")})
+            if yol == "/api/ses/kurulum":   # ses ortamı kurulum durumu (ilerleme yoklaması); ?plan=1 boyutları ve Python durumunu da verir
+                if self.headers.get("X-Ag-Anahtar") != ANAHTAR:
+                    return self._gonder(403, {"hata": "anahtar"})
+                q = parse_qs(urlsplit(self.path).query)
+                d = sesk.ozet()
+                if q.get("plan"):
+                    d["plan"] = sesk.plan(q.get("parca", [""])[0].split(",") if q.get("parca") else None, q.get("model", [""])[0] or None)
+                return self._gonder(200, d)
             if yol == "/api/pusula":
                 if self.headers.get("X-Ag-Anahtar") != ANAHTAR:
                     return self._gonder(403, {"hata": "anahtar"})
@@ -762,6 +999,10 @@ class Isleyici(BaseHTTPRequestHandler):
                 if self.headers.get("X-Ag-Anahtar") != ANAHTAR:
                     return self._gonder(403, {"hata": "anahtar"})
                 return self._gonder(200, kaynaklar_liste(None))
+            if yol == "/api/saglayici":
+                if self.headers.get("X-Ag-Anahtar") != ANAHTAR:
+                    return self._gonder(403, {"hata": "anahtar"})
+                return self._gonder(200, mdl.durum())
             if yol == "/api/pusula/durum":
                 if self.headers.get("X-Ag-Anahtar") != ANAHTAR:
                     return self._gonder(403, {"hata": "anahtar"})
@@ -782,6 +1023,8 @@ class Isleyici(BaseHTTPRequestHandler):
                 kid = parse_qs(urlsplit(self.path).query).get("id", [""])[0]
                 return self._gonder(200, {"etkin": bool(vault.ayar()), "satirlar": vault.kisi_anilma(kid)})
             return self._gonder(404, {"hata": "yok"})
+        except ValueError as e:   # geçersiz sorgu parametresi (ör. ses/kurulum?parca=zzz): sunucu hatası değil
+            return self._gonder(400, {"hata": str(e)})
         except Exception as e:
             gunluk(hata_izi())
             return self._gonder(500, {"hata": str(e)})
@@ -801,19 +1044,29 @@ class Isleyici(BaseHTTPRequestHandler):
                 return
             if g.get("anahtar") == ANAHTAR:
                 kl.kapat(self._oturum())
+                ag_demo.kapat()   # oturum bitti: geçici demo verisi de silinir
                 return self._gonder(200, {"ok": True}, cerez=kl.cerez_yaz("") + "; Max-Age=0")
             return self._gonder(403, {"hata": "yetki"})
-        if not self._host_ok() or self.headers.get("X-Ag-Anahtar") != ANAHTAR:
+        beklenen = ag_demo.anahtar() if yol in DEMO_ANAHTARLI else ANAHTAR   # demo uçları yalnız demo anahtarıyla, gerçek uçlar yalnız gerçek anahtarla
+        if not self._host_ok() or not beklenen or self.headers.get("X-Ag-Anahtar") != beklenen:
             return self._gonder(403, {"hata": "yetki"})
         if yol == "/api/kilit/kapat":
             kl.kapat(self._oturum())
+            ag_demo.kapat()
             return self._gonder(200, {"ok": True}, cerez=kl.cerez_yaz("") + "; Max-Age=0")
+        if yol.startswith("/api/ses/kurulum/") and not self._koken_ok():   # indirme başlatan uçlar yalnız yerel sayfadan
+            return self._gonder(403, {"hata": "yetki"})
         if not self._acik():
             return self._gonder(401, {"hata": "kilitli"})
+        if yol in KOKEN_DENETIMLI and not self._koken_ok():
+            return self._gonder(403, {"hata": "yetki"})
         if yol not in ISLEMLER:
             return self._gonder(404, {"hata": "yok"})
+        yukleme = yol in YUKLEME_ONIZLE
+        if yukleme and not _yukleme_isi.acquire(blocking=False):   # aynı anda en çok 1 yükleme işi (bellek + CPU)
+            return self._gonder(429, {"hata": "Başka bir içe aktarma işleniyor; o bitince yeniden dene."})
         try:
-            g = self._govde(ISTEK_AZAMI)
+            g = self._govde(YUKLEME_AZAMI.get(yol, ISTEK_AZAMI))
             if g is None:
                 return
             if yol in KILITSIZ:
@@ -823,13 +1076,18 @@ class Isleyici(BaseHTTPRequestHandler):
                     sonuc = ISLEMLER[yol](g)
                     if yol not in DEGISTIRMEYEN:
                         statik_yenile()
-            gunluk(f"{yol} ok")
+            if not yol.startswith("/api/demo/"):   # demo gerçek ayar klasörüne (günlük dahil) hiçbir şey yazmaz
+                gunluk(f"{yol} ok")
             return self._gonder(200, {"ok": True, **sonuc})
         except ValueError as e:
             return self._gonder(400, {"hata": str(e)})
         except Exception as e:
-            gunluk(hata_izi())
+            if not yol.startswith("/api/demo/"):
+                gunluk(hata_izi())
             return self._gonder(500, {"hata": str(e)})
+        finally:
+            if yukleme:
+                _yukleme_isi.release()
 
 
 def calisiyor_mu():
@@ -843,7 +1101,7 @@ def calisiyor_mu():
 def bekci(sunucu):
     while True:
         time.sleep(60)
-        if time.time() - son_istek > BOSTA_DUR and not (an._isci and an._isci.is_alive()) and not st.durum()["calisiyor"]:
+        if time.time() - son_istek > BOSTA_DUR and not (an._isci and an._isci.is_alive()) and not st.durum()["calisiyor"] and not sesk.calisiyor():
             gunluk("boşta, duruyor")
             sunucu.shutdown()
             return
@@ -977,7 +1235,10 @@ def kaynaklar_ayarla(g):
         return kaynaklar_liste(None)
     ks.kaynak_ayarla(g.get("id"), bool(g.get("acik")))
     if g.get("acik"):
-        ks.yenile()
+        if g.get("id") == "akademik":   # okul doldurmasının parçası: okul ve ders varsa şimdi çalıştır
+            threading.Thread(target=lambda: kaynak_doldur({"zorla": True}), daemon=True).start()
+        else:
+            ks.yenile()
     return kaynaklar_liste(None)
 
 
@@ -986,11 +1247,31 @@ def kaynaklar_yenile(g):
         raise ValueError("bilinmeyen kaynak")
     if not ks.KAYNAK_AYARLARI[g["id"]]["acik"]():
         raise ValueError("Önce kaynağı aç.")
+    if g["id"] == "akademik":
+        threading.Thread(target=lambda: kaynak_doldur({"zorla": True}), daemon=True).start()
+        return {"basladi": True}
     return {"basladi": ks.yenile(True)}
 
 
 def kaynaklar_liste(_):
     return ks.kaynaklar_durum()
+
+
+def kasa_kisi_onizle(_):
+    """Kasadaki `kind: person` notlarını yazmadan listeler (yeni / güncelleme / güncel). Kasaya yazılmaz."""
+    return kk.onizle()
+
+
+def kasa_kisi_al(g):
+    """Önizlemede seçilen kasa notlarını Kut kişilerine yazar (kasaya yazılmaz); yollar yeniden taranan listeyle doğrulanır.
+    Başarıyla alındıysa sihirbaz bu adımı bir daha sormasın diye ayarlar.json → kasa_alindi işaretlenir."""
+    sonuc = kk.al(g.get("yollar"))
+    if g.get("yollar"):
+        a = ia.ayarlar()
+        if not a.get("kasa_alindi"):
+            a["kasa_alindi"] = True
+            ia.ayar_yaz(a)
+    return sonuc
 
 
 def kesif_karar(g):
@@ -999,8 +1280,8 @@ def kesif_karar(g):
 
 
 def strateji_baslat(_):
-    if not an.claude_yolu():
-        raise ValueError("claude komutu bulunamadı (Claude Code kurulu mu?)")
+    if not mdl.hazir():
+        raise ValueError(mdl.hazir_degil_mesaji())
     if not hd.hepsi(("aktif", "taslak", "beklemede")):
         raise ValueError("Önce en az bir hedef ekle.")
     return {"basladi": st.baslat()}
@@ -1015,15 +1296,23 @@ ISLEMLER.update({"/api/hedef": hedef_kaydet, "/api/hedef/ilerleme": hedef_ilerle
                  "/api/kaynaklar": kaynaklar_ayarla, "/api/kaynaklar/yenile": kaynaklar_yenile,
                  "/api/strateji/baslat": strateji_baslat, "/api/strateji/sonuc": strateji_sonuc})
 DEGISTIRMEYEN.update({"/api/hedef", "/api/hedef/ilerleme", "/api/hedef/arsivle", "/api/kesif/yenile", "/api/kesif/vekilpedia", "/api/kesif/karar",
-                      "/api/kaynaklar/yenile", "/api/strateji/baslat", "/api/strateji/sonuc"})   # ağ sayfası değişmez; Pusula kendi verisini çeker
+                      "/api/kaynaklar/yenile", "/api/strateji/baslat", "/api/strateji/sonuc"})   # ağ sayfası değişmez; Pusula ve Ayarlar kendi verisini çeker
+ISLEMLER.update({"/api/vault/kisiler/onizle": kasa_kisi_onizle, "/api/vault/kisiler/al": kasa_kisi_al})
+DEGISTIRMEYEN.add("/api/vault/kisiler/onizle")
+KOKEN_DENETIMLI = {"/api/vault/kisiler/onizle", "/api/vault/kisiler/al", "/api/ders/onayla", "/api/saglayici", "/api/ses/kurulum/ayar",
+                   "/api/soz", "/api/soz/durum", "/api/soz/onayla", "/api/kisi/uzak", "/api/sihirbaz"}   # anahtara ek olarak Origin de bu sunucudan gelmeli
 ISLEMLER["/api/kilit/degistir"] = kilit_degistir
 DEGISTIRMEYEN.add("/api/kilit/degistir")
 ISLEMLER["/api/ses/mikrofon"] = mikrofon
 DEGISTIRMEYEN.add("/api/ses/mikrofon")
+ISLEMLER.update({"/api/ses/kurulum/baslat": ses_kurulum_baslat, "/api/ses/kurulum/iptal": lambda g: sesk.iptal(),
+                 "/api/ses/kurulum/kaldir": lambda g: ses.kaldir(), "/api/ses/kurulum/ayar": ses_kurulum_ayar})
+DEGISTIRMEYEN.update({"/api/ses/kurulum/baslat", "/api/ses/kurulum/iptal", "/api/ses/kurulum/kaldir", "/api/ses/kurulum/ayar"})
+KILITSIZ.update({"/api/ses/kurulum/baslat", "/api/ses/kurulum/iptal", "/api/ses/kurulum/kaldir"})   # süreç/disk işi; veri kilidini tutmasınlar
 
 
 def guncelleme_ayar(g):
-    """Güncelleme izni (ilk açılışta sorulur ya da Pusula → Kaynaklar): {otomatik: bool}. Evet ise ilk denetim arka planda başlar."""
+    """Güncelleme izni (ilk açılışta sorulur ya da Ayarlar → Kaynaklar): {otomatik: bool}. Evet ise ilk denetim arka planda başlar."""
     if not isinstance(g.get("otomatik"), bool):
         raise ValueError("otomatik: true/false olmalı")
     gu.otomatik_ayarla(g["otomatik"])
@@ -1036,6 +1325,120 @@ ISLEMLER.update({"/api/guncelleme/ayar": guncelleme_ayar, "/api/guncelleme/denet
                  "/api/guncelleme/uygula": lambda g: gu.uygula(), "/api/guncelleme/geri": lambda g: gu.geri()})
 DEGISTIRMEYEN.update({"/api/guncelleme/ayar", "/api/guncelleme/denetle", "/api/guncelleme/uygula", "/api/guncelleme/geri"})
 KILITSIZ.update({"/api/guncelleme/denetle", "/api/guncelleme/uygula", "/api/guncelleme/geri"})   # ağ/süreç işi; veri kilidini tutmasınlar
+
+
+# ---------- veri entegrasyonları: takvim (.ics), LinkedIn CSV, ders listesi yapıştırma (yerel; ağ yok) ----------
+# Önizleme uçları hiçbir şey yazmaz (sonuç bellekte, belirteçle); uygula uçları yalnız onayla yazar. Hepsi POST + anahtar + Origin ister.
+def _yuklenen(d, azami):
+    ham = base64.b64decode(str((d or {}).get("veri") or "").split(",", 1)[-1])
+    if len(ham) > azami:
+        raise ValueError("dosya çok büyük")
+    return os.path.basename(str((d or {}).get("ad") or "dosya")), ham
+
+
+def takvim_onizle(g):
+    ad, ham = _yuklenen(g, tk.DOSYA_AZAMI)
+    ben = g.get("ben") if isinstance(g.get("ben"), list) else str(g.get("ben") or "").split(",")
+    secenek = {"ben": [str(x).strip() for x in ben if str(x).strip()][:20], "buyuk_dahil": g.get("buyuk_dahil") is True}
+    if isinstance(g.get("baslik"), bool):
+        secenek["baslik"] = g["baslik"]
+    if isinstance(g.get("buyuk_esik"), (int, float)) and not isinstance(g.get("buyuk_esik"), bool):
+        secenek["buyuk_esik"] = int(g["buyuk_esik"])
+    return tk.onizle(ad, ham, secenek)
+
+
+def linkedin_onizle(g):
+    dosyalar = g.get("dosyalar")
+    if not isinstance(dosyalar, list) or not 1 <= len(dosyalar) <= 3:
+        raise ValueError("dosyalar: 1-3 dosya olmalı")
+    return li.onizle([_yuklenen(d, li.DOSYA_AZAMI) for d in dosyalar])
+
+
+def ders_yapistir_onizle(g):
+    return dy.onizle(str(g.get("metin") or "")[:dy.METIN_AZAMI])
+
+
+def _secimler(g):
+    s = g.get("secimler")
+    return s if isinstance(s, dict) else {}
+
+
+ISLEMLER.update({"/api/takvim/onizle": takvim_onizle, "/api/takvim/uygula": lambda g: tk.uygula(g.get("token"), _secimler(g)),
+                 "/api/linkedin/onizle": linkedin_onizle, "/api/linkedin/uygula": lambda g: li.uygula(g.get("token"), _secimler(g)),
+                 "/api/ders-yapistir/onizle": ders_yapistir_onizle, "/api/ders-yapistir/uygula": lambda g: dy.uygula(g.get("token"), _secimler(g))})
+DEGISTIRMEYEN.update({"/api/takvim/onizle", "/api/linkedin/onizle", "/api/ders-yapistir/onizle"})
+# Önizlemeler hiçbir şey yazmaz (sonuç `ag_ice_ortak` içinde kendi kilitli sözlüğünde durur) ve uzun sürebilir (büyük .ics): genel veri kilidini
+# tutmasınlar, yoksa bütün arayüz kilitlenir. Kişi dosyalarını okuyan kısa bölüm `ort.okuma_kilidi()` ile bu `kilit` altında çalışır (yarım yazılmış
+# dosya okumasın); ağır ayrıştırma kilitsizdir. Aynı anda en çok bir yükleme işi çalışır (_yukleme_isi), meşgulse 429.
+YUKLEME_ONIZLE = {"/api/takvim/onizle", "/api/linkedin/onizle", "/api/ders-yapistir/onizle"}
+KILITSIZ.update(YUKLEME_ONIZLE)
+_yukleme_isi = threading.BoundedSemaphore(1)
+ort.okuma_kilidi_ayarla(kilit)
+KOKEN_DENETIMLI.update({"/api/takvim/onizle", "/api/takvim/uygula", "/api/linkedin/onizle", "/api/linkedin/uygula",
+                        "/api/ders-yapistir/onizle", "/api/ders-yapistir/uygula"})
+YUKLEME_AZAMI = {"/api/takvim/onizle": 85_000_000, "/api/linkedin/onizle": 125_000_000, "/api/ders-yapistir/onizle": 400_000,
+                 "/api/takvim/uygula": 6_000_000, "/api/linkedin/uygula": 6_000_000, "/api/ders-yapistir/uygula": 1_000_000}   # base64 gövde sınırı
+
+
+def sihirbaz_bitti():
+    """İlk açılış sihirbazı (kurulum + özellik turu) tamamlandı mı? Kalıcı durum ayarlar.json → "sihirbaz"."""
+    return bool((ia.ayarlar().get("sihirbaz") or {}).get("bitti"))
+
+
+def sihirbaz_ayar(g):
+    """İlk açılış sihirbazının durumu: {durum: "bitti"} (tamamlandı ya da kapatıldı: bir daha kendiliğinden açılmaz) | "sifirla" (yeniden açılsın).
+    Menüdeki "Kurulum ve tanıtım" bu durumdan bağımsız elle açılır."""
+    d = g.get("durum")
+    if d not in ("bitti", "sifirla"):
+        raise ValueError("durum: bitti ya da sifirla olmalı")
+    a = ia.ayarlar()
+    a["sihirbaz"] = {"bitti": True, "tarih": datetime.now().strftime("%Y-%m-%d %H:%M")} if d == "bitti" else {"bitti": False}
+    ia.ayar_yaz(a)
+    return {"bitti": d == "bitti"}
+
+
+ISLEMLER["/api/sihirbaz"] = sihirbaz_ayar
+DEGISTIRMEYEN.add("/api/sihirbaz")
+
+
+def sihirbaz_bilinen():
+    """Sihirbazın yeniden sormaması gereken, sunucuda bilinen şeyler (ad/fotoğraf/okul ben.md'den, ses arayüzden gelir):
+    yz = sağlayıcı açıkça seçilmiş; kasa = kasadan kişiler bir kez alınmış."""
+    a = ia.ayarlar()
+    return {"yz": a.get("saglayici") in mdl.SAGLAYICILAR, "kasa": bool(a.get("kasa_alindi"))}
+
+
+def arayuz_sesi_acik():
+    """Arayüz sesleri (tık, geçiş, pencere) açık mı? Varsayılan AÇIK. YALNIZ bu sesleri etkiler: açılıştaki Kut sesi bu ayara bakmaz."""
+    return (ia.ayarlar().get("arayuz") or {}).get("ses", True) is not False
+
+
+def arayuz_sesi_ayar(g):
+    """{acik: true|false} → ayarlar.json → arayuz.ses. Mantıksal olmayan değer reddedilir."""
+    acik = g.get("acik")
+    if not isinstance(acik, bool):
+        raise ValueError("acik: true ya da false olmalı")
+    a = ia.ayarlar()
+    a["arayuz"] = {**(a.get("arayuz") or {}), "ses": acik}
+    ia.ayar_yaz(a)
+    return {"acik": acik}
+
+
+ISLEMLER["/api/arayuz/ses"] = arayuz_sesi_ayar
+DEGISTIRMEYEN.add("/api/arayuz/ses")
+KOKEN_DENETIMLI.add("/api/arayuz/ses")   # sihirbaz ucu gibi: anahtara ek olarak Origin de bu sunucudan gelmeli
+
+
+# ---------- demo önizlemesi: "Deniz'in salısı" (ag_demo.py). Yalıtım ve gerekçe modülün başındadır ----------
+# /api/demo/baslat gerçek anahtarla (sayfa açık ve kilit açıkken), diğerleri DEMO anahtarıyla çalışır; ikisi de kilit + yerel Origin ister.
+# Hiçbiri veri kilidini tutmaz, statik yenileme/günlük yazmaz: yazdıkları yalnız geçici demo klasörüdür.
+DEMO_UCLARI = {"/api/demo/baslat": lambda g: ag_demo.baslat(), "/api/demo/kapat": lambda g: ag_demo.kapat(), "/api/demo/sor": ag_demo.sor,
+               "/api/demo/soz": ag_demo.soz_onayla, "/api/demo/isinma": ag_demo.isinma}
+DEMO_ANAHTARLI = set(DEMO_UCLARI) - {"/api/demo/baslat"}
+ISLEMLER.update(DEMO_UCLARI)
+DEGISTIRMEYEN.update(DEMO_UCLARI)
+KILITSIZ.update(DEMO_UCLARI)
+KOKEN_DENETIMLI.update(DEMO_UCLARI)
 
 
 def tarayici_ac(url):

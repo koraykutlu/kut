@@ -17,6 +17,7 @@ import os
 import re
 import threading
 import time
+import urllib.error
 import urllib.request
 import urllib.robotparser
 from datetime import date, datetime, timedelta
@@ -26,7 +27,7 @@ import ag_hedef as hd
 import ag_ice_aktar as ia
 
 KLASOR = os.path.join(ia.DEPO, "kesif")
-TARAYICI = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36 Kut/1"
+TARAYICI = "Mozilla/5.0 (compatible; Kut/1; yerel kisisel ag araci)"
 VEKILPEDIA = "https://vekilpedia.com/veri/{}.csv"
 VEKIL_DOSYALAR = ("milletvekilleri", "soru-onergeleri", "kanun-teklifleri", "konusmalar")
 VEKIL_YENILE_GUN = 7
@@ -55,19 +56,41 @@ def _istek(url, zaman=30, azami=40_000_000):
 
 
 _robots = {}
+ROBOT_AJANI = "Kut"            # robots.txt'te sorgulanan ürün adı; User-Agent'taki ürün belirteciyle AYNI olmalı (TARAYICI içindeki Kut/1)
+ROBOTS_UZUN_SAAT = 24          # kesin cevaplar (var / 404 / 410 / 401 / 403) bu süre önbellekte kalır
+ROBOTS_KISA_DAKIKA = 10        # geçici hatalar (5xx, zaman aşımı, SSRF reddi, ağ) kısa süre "yasak" sayılır, sonra yeniden denenir
+
+
+def _robots_getir(kok):
+    """robots.txt kararı: RobotFileParser | True (her şeye izin) | False (hiçbirine izin yok), ve geçerlilik saniyesi.
+    404/410: dosya yok → serbest (RFC 9309'daki 'bulunamadı'). 401/403: erişim kısıtlı → yasak (kullanıcı kararı: sitenin kapısı kapalıysa girme).
+    5xx, zaman aşımı, SSRF reddi, diğer ağ hataları: belirsiz → geçici yasak, kısa süre sonra yeniden sorulur (hata 'izin' demek değildir)."""
+    try:
+        govde = _istek(kok + "/robots.txt", 15, 500_000)
+    except urllib.error.HTTPError as e:
+        if e.code in (404, 410):
+            return True, ROBOTS_UZUN_SAAT * 3600
+        if e.code in (401, 403):
+            return False, ROBOTS_UZUN_SAAT * 3600
+        return False, ROBOTS_KISA_DAKIKA * 60
+    except Exception:   # zaman aşımı, SSRF reddi (OSError), bağlantı hatası
+        return False, ROBOTS_KISA_DAKIKA * 60
+    rp = urllib.robotparser.RobotFileParser()
+    rp.parse(govde.decode("utf-8", "replace").splitlines())
+    return rp, ROBOTS_UZUN_SAAT * 3600
 
 
 def robots_izin(url):
     kok = "/".join(url.split("/")[:3])
-    if kok not in _robots:
-        rp = urllib.robotparser.RobotFileParser()
-        try:
-            rp.parse(_istek(kok + "/robots.txt", 15, 500_000).decode("utf-8", "replace").splitlines())
-        except Exception:
-            rp = None   # robots.txt yoksa okunabilir sayılır
-        _robots[kok] = rp
-    rp = _robots[kok]
-    return rp is None or rp.can_fetch("Kut", url)
+    simdi = time.time()
+    kayit = _robots.get(kok)
+    if kayit is None or kayit[1] <= simdi:
+        karar, sure = _robots_getir(kok)
+        kayit = _robots[kok] = (karar, simdi + sure)
+    karar = kayit[0]
+    if isinstance(karar, bool):
+        return karar
+    return karar.can_fetch(ROBOT_AJANI, url)
 
 
 def kelimeler(metin):
@@ -192,6 +215,10 @@ KAYNAK_AYARLARI = {
                  "aciklama": "Yaklaşan etkinlikler; hedeflerinle eşleşenler Pusula'da üstte çıkar.",
                  "indirir": "Herkese açık etkinlik sayfaları (robots.txt izinli), 12 saatte bir; seçili okulun etkinlik sayfası da varsa",
                  "nereden": "coderspace.io, lu.ma, eventbrite.com, devpost.com"},
+    "akademik": {"ad": "Akademik profiller", "acik": lambda: __import__("ag_akademik").acik(), "dosya": lambda: __import__("ag_kaynak").DURUM,
+                 "aciklama": "Okulundan eklenen hocaların kurumu, yayın sayısı ve çalışma alanları; hepsi Doğrula'ya öneri olarak düşer.",
+                 "indirir": "Yalnız hocanın adı sorulur; sonuç kişi dosyasına doğrudan yazılmaz. Okul bağdaştırıcısı seçiliyken, kaynaktan doldurma sırasında",
+                 "nereden": "api.openalex.org, pub.orcid.org"},
 }
 
 
@@ -543,7 +570,7 @@ def yenile(zorla=False, bitince=None):
                 v = etkinlikleri_cek(zorla)
                 notlar.append(f"{len(v['etkinlikler'])} yaklaşan etkinlik")
             else:
-                notlar.append("etkinlik taraması kapalı (Pusula → Kaynaklar)")
+                notlar.append("etkinlik taraması kapalı (Ayarlar → Kaynaklar)")
             _durum.update(son=datetime.now().isoformat(timespec="minutes"), mesaj=" · ".join(notlar))
             if bitince:
                 bitince()

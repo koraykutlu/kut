@@ -194,7 +194,7 @@ IHMAL_GUN = {3: 14, 2: 30, 1: 60}
 SIKLIK = {"gunluk": (1, "Her gün (birlikte yaşıyor / aynı ortam)"), "haftalik": (7, "Haftada bir ya da daha sık"),
           "aylik": (30, "Ayda bir civarı")}
 BEN_VARSAYILAN = {"id": "ben", "ad": "Ben", "kurum": "", "rol": "Merkez", "foto": "", "asistan": "Claude",
-                  "temas_basligi": "Temas", "yorum_yolu": "veri/yorumlar", "ilgiler": [], "karakter": "", "okul": "", "dersler": []}
+                  "temas_basligi": "Temas", "yorum_yolu": "veri/yorumlar", "ilgiler": [], "karakter": "", "okul": "", "dersler": [], "dogum_gunu": ""}
 BEN_ALANLARI = list(BEN_VARSAYILAN)
 
 
@@ -625,9 +625,11 @@ def dikkatler(kisiler, iliskiler):
 
 
 def bu_hafta(kisiler, bugun=None):
-    """Tarihi gelen sonraki adımlar + yakınlığına göre ihmal edilenler. Hariç kişiler asla girmez."""
+    """Tarihi gelen sonraki adımlar + yakınlığına göre ihmal edilenler + gecikmiş/yaklaşan sözler (`tur: "soz"`, `ag_soz.hatirlatmalar`).
+    Hariç kişiler asla girmez. Pusula hamleleri buraya girmez (ayrı bölüm)."""
+    import ag_soz   # geç içe aktarma: ag_soz bu modülü kullanır
     bugun = bugun or date.today()
-    liste = []
+    liste = ag_soz.hatirlatmalar(kisiler, bugun)
     for k in kisiler:
         if k.get("haric"):
             continue
@@ -887,7 +889,10 @@ def veri_hazirla(uyarilar=None, foto_gom=True):
         k["puan"] = iliski_puanlari(k, cevreler, ilgiler)
         k["ozellik"] = ozellik_oku(k)
     bekleyen = [r for r in cikarimlari_oku() if r["durum"] == "bekliyor" and r["kisi"] in kmap]
+    import ag_soz   # geç içe aktarma (ag_soz bu modülü kullanır)
+    ag_soz.ozet_ekle(kisiler)
     for k in kisiler:
+        k["uzak_kapali"] = "haric" if k["haric"] else "kapali" if str(k.get("remote_allowed", "")).strip().lower() in ("false", "hayir", "no", "0", "off") else ""
         k["bekleyen"] = sum(1 for r in bekleyen if r["kisi"] == k["id"])
         k["belgeler"] = belgeler(k["id"])
         e = etkin_son_temas(k)
@@ -923,4 +928,5 @@ def sayfa(veri, mod=None, kilit=None):
     return re.sub(r"/\*(VERI|MOD|KILIT)\*/null", lambda m: deger[m.group(1)], html)
 
 
-veri_klasoru(os.environ.get("AGIM_VERI") or varsayilan_veri())
+if not globals().get("DEMO_KAPSULU"):   # demo kapsülü (ag_demo.py) gerçek veri klasörünü iskeletlemez; yolunu kendisi verir
+    veri_klasoru(os.environ.get("AGIM_VERI") or varsayilan_veri())

@@ -3,12 +3,14 @@
 Kullanım:
     py -3 demo/demo_veri.py                 # geçici bir klasöre yazar, yolunu yazdırır
     py -3 demo/demo_veri.py --hedef KLASÖR  # verilen (boş ya da olmayan) klasöre yazar
+    py -3 demo/demo_veri.py --senaryo sali  # "Deniz'in salısı" uygulama içi demo senaryosu (kut/ag_demo.py); hedef/strateji dosyası yazmaz
 Sonra:
     py -3 kut.pyw --veri KLASÖR [--port 47400]
 
 Bütün kişiler, kurumlar ve olaylar uydurmadır; gerçek biriyle ilgisi yoktur. Tarihler bugüne göre göreli üretilir.
 Biçimler uygulamanın kendi yazıcılarıyla (ag_cekirdek, ag_hedef, ag_strateji) yazılır; fotoğraflar standart
-kütüphaneyle çizilen baş harfli renkli daire PNG'lerdir (gerçek yüz yok). Ağa hiçbir istek atılmaz.
+kütüphaneyle çizilen baş harfli opak KARE PNG'dir (yalnız merkezdeki kişi için; köşeleri şeffaf yuvarlak avatar kullanılmaz).
+Diğer kişilerin fotoğrafı yoktur: harita onları tür renginde dolu kare + baş harf olarak çizer (Kut'un kare kişi işareti dili). Ağa hiçbir istek atılmaz.
 """
 import argparse
 import os
@@ -74,19 +76,16 @@ def avatar(ad, renk, boyut=160):
                     for dy in range(olcek):
                         for dx in range(olcek):
                             piksel.add((x0 + i * 6 * olcek + k * olcek + dx, y0 + r * olcek + dy))
-    orta, yaricap = (boyut - 1) / 2, boyut / 2 - 1
     satirlar = []
     for y in range(boyut):
         s = []
         for x in range(boyut):
-            d = ((x - orta) ** 2 + (y - orta) ** 2) ** 0.5
-            a = max(0.0, min(1.0, yaricap - d + 0.5))
             if (x, y) in piksel:
                 r_, g_, b_ = 255, 255, 255
             else:   # üstten alta hafif aydınlanan zemin
                 t = 0.82 + 0.18 * (1 - y / boyut)
                 r_, g_, b_ = (min(255, int(v * t)) for v in renk)
-            s += [r_, g_, b_, int(a * 255)]
+            s += [r_, g_, b_, 255]
         satirlar.append(s)
     return _png(boyut, boyut, satirlar)
 
@@ -132,7 +131,7 @@ KISILER = [
     ("Baran Sanalıoğlu", "akademi", "Kuzeyova Üniversitesi", "Doktora Öğrencisi", 2, ["veri görselleştirme", "makine öğrenmesi"], ["ders"],
      [(26, "yüz yüze", "Laboratuvarda grafik kütüphanelerini karşılaştırdık."), (8, "mesaj", "Makale taslağını paylaştı.")], {}),
     ("Pelin Mavisu", "cevre", "", "Öğretmen", 2, ["eğitim"], ["okul"], [(33, "mesaj", "Mezuniyet buluşması için yazıştık.")], {}),
-    ("Umut Kurmaca", "is", "Çınaraltı Vakfı", "Program Yöneticisi", 1, ["sivil toplum", "açık veri"], ["etkinlik"],
+    ("Tolga Kurmaca", "is", "Çınaraltı Vakfı", "Program Yöneticisi", 1, ["sivil toplum", "açık veri"], ["etkinlik"],
      [(54, "e-posta", "Açık veri çalıştayı için bilgi istedi.")], {}),
     ("Gizem Denizci", "yakin", "", "Biyolog", 3, ["deniz biyolojisi"], ["çevre"],
      [(2, "mesaj", "Günlük konuşma."), (1, "yüz yüze", "Akşam yemeği.")], {"temas_sikligi": "gunluk"}),
@@ -173,13 +172,13 @@ ILISKILER = [   # (a, b, tip, not)   yönlü tiplerde A → B
     ("tuna-kurguner", "baris-denemeci", "birlikte-calisiyor", ""), ("tuna-kurguner", "mine-bulutcu", "birlikte-calisiyor", ""),
     ("selin-uydurmaz", "baris-denemeci", "birlikte-calisiyor", ""), ("zeynep-ornekoglu", "kerem-kurgun", "birlikte-calisiyor", "Hackathon ekibi"),
     ("zeynep-ornekoglu", "ipek-hayalgucu", "tanisiyor", ""), ("ece-sahteli", "onur-hayalci", "tanisiyor", ""),
-    ("ece-sahteli", "umut-kurmaca", "tanisiyor", ""), ("onur-hayalci", "mert-kurgusal", "is-ortagi", "Ortak fon"),
+    ("ece-sahteli", "tolga-kurmaca", "tanisiyor", ""), ("onur-hayalci", "mert-kurgusal", "is-ortagi", "Ortak fon"),
     ("mert-kurgusal", "kuzey-sahaf", "birlikte-calisiyor", "Aynı fon"), ("mert-kurgusal", "yigit-peridagi", "tanisiyor", ""),
     ("ruzgar-tasarlak", "tuna-kurguner", "rakip", "Rakip ürünler"), ("ruzgar-tasarlak", "taner-golgeli", "is-ortagi", "Eski ortaklık"),
     ("taner-golgeli", "tuna-kurguner", "gerginlik", "Eski sözleşme anlaşmazlığı"), ("nehir-hayalbaz", "pelin-mavisu", "arkadas", ""),
     ("nehir-hayalbaz", "doruk-masalyan", "arkadas", ""), ("nehir-hayalbaz", "gulten-hayalbaz", "akraba", "Annesi"),
     ("nehir-hayalbaz", "orhan-hayalbaz", "akraba", "Babası"), ("gulten-hayalbaz", "orhan-hayalbaz", "partner", ""),
-    ("hande-efsane", "umut-kurmaca", "tanisiyor", "Açık veri çalıştayı"), ("alper-dussel", "selin-uydurmaz", "arkadas", ""),
+    ("hande-efsane", "tolga-kurmaca", "tanisiyor", "Açık veri çalıştayı"), ("alper-dussel", "selin-uydurmaz", "arkadas", ""),
     ("asli-ruyali", "baran-sanalioglu", "arkadas", "Aynı laboratuvar"), ("kuzey-sahaf", "onur-hayalci", "tanisiyor", ""),
     ("ipek-hayalgucu", "kerem-kurgun", "arkadas", ""), ("defne-yoktur", "pelin-mavisu", "tanisiyor", ""),
     ("gizem-denizci", "cansu-uydurukoglu", "tanisiyor", ""), ("emre-masalci", "aylin-masalci", "akraba", "Kuzenler"),
@@ -194,7 +193,7 @@ CIKARIMLAR = [
      "gerekce": "ikisi de Mavi Defter etkinliklerinde geçiyor", "kaynak": "demo"},
     {"kisi": "ece-sahteli", "alan": "ozellikler", "deger": "destek=7, uyum=6",
      "gerekce": "destek: başvuru takvimini kendiliğinden gönderdi ; uyum: iki görüşmede de aynı hedeflerden söz ettiniz", "kaynak": "demo"},
-    {"kisi": "umut-kurmaca", "alan": "rol", "deger": "Program Direktörü", "gerekce": "son e-postasının imzasında yazıyor", "kaynak": "demo"},
+    {"kisi": "tolga-kurmaca", "alan": "rol", "deger": "Program Direktörü", "gerekce": "son e-postasının imzasında yazıyor", "kaynak": "demo"},
     {"kisi": "kerem-kurgun", "alan": "soru", "deger": "Hackathon jürisindeki rolü bu yıl da sürüyor mu?",
      "gerekce": "son kayıt 63 gün önce", "kaynak": "demo"},
 ]
@@ -216,7 +215,7 @@ def uret(hedef):
         kid = c.slug(ad)
         satirlar = [f"{tarih_tr(n)} · {kanal} · {metin}" for n, kanal, metin in sorted(temaslar, reverse=True)]
         alanlar = {"ad": ad, "tur": tur, "kurum": kurum, "rol": rol, "alan": alan, "nereden": nereden, "yakinlik": str(yak),
-                   "foto": c.foto_kaydet(kid, avatar(ad, RENKLER[i % len(RENKLER)]))}
+                   "foto": ""}
         if temaslar:
             alanlar["son_temas"] = gun(min(n for n, _, _ in temaslar)).isoformat()
         alanlar.update(ek)
@@ -262,8 +261,13 @@ def uret(hedef):
 def main():
     p = argparse.ArgumentParser(description="Kut için kurgusal demo verisi üretir.")
     p.add_argument("--hedef", help="Yazılacak klasör (varsayılan: geçici klasör)")
+    p.add_argument("--senaryo", choices=["sali"], help="Genel demo yerine uygulama içi demo senaryosunu yazar (sali: Deniz'in salısı)")
     a = p.parse_args()
     hedef = a.hedef or tempfile.mkdtemp(prefix="kut-demo-")
+    if a.senaryo == "sali":   # senaryo verisi tek yerde (kut/ag_demo.py): uygulama içi demo ile aynı kişiler ve tarihler
+        import ag_demo
+        print(ag_demo.uret(c, hedef, ben_foto=avatar(BEN["ad"], (212, 167, 44))))
+        return
     print(uret(hedef))
 
 

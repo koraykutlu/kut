@@ -154,26 +154,33 @@ ZIP_TOPLAM_AZAMI = 150_000_000  # okunacak tüm .txt'lerin açılmış toplamı
 ZIP_ORAN_AZAMI = 200            # açılmış/sıkıştırılmış oranı (zip bombası)
 
 
+def zip_icerik(ham, secici):
+    """ZIP içinden secici(dosya_adi) doğru diyen dosyaların (ad, bayt) çiftleri. Hiçbir şey açılmadan ÖNCE yol (../, mutlak), boyut ve
+    sıkıştırma oranı denetlenir; gerçek okuma da sınırlıdır (zip bombası). Diske hiçbir şey yazılmaz."""
+    try:
+        z = zipfile.ZipFile(io.BytesIO(ham))
+    except zipfile.BadZipFile:
+        raise ValueError("ZIP dosyası bozuk")
+    secilen = [i for i in z.infolist() if not i.is_dir() and secici(i.filename)]
+    toplam = 0
+    for i in secilen:
+        if ".." in i.filename.replace("\\", "/").split("/") or i.filename.startswith(("/", "\\")) or os.path.isabs(i.filename):
+            raise ValueError("ZIP içinde güvensiz dosya adı var; içe aktarılmadı")
+        toplam += i.file_size
+        if i.file_size > ZIP_TEK_AZAMI or toplam > ZIP_TOPLAM_AZAMI or i.file_size > ZIP_ORAN_AZAMI * max(i.compress_size, 1024):
+            raise ValueError("ZIP beklenenden çok büyük açılıyor (zip bombası olabilir); içe aktarılmadı")
+    for i in secilen:
+        with z.open(i) as f:
+            veri = f.read(ZIP_TEK_AZAMI + 1)   # başlıktaki boyut yalan olabilir: gerçek okumayı da sınırla
+        if len(veri) > ZIP_TEK_AZAMI:
+            raise ValueError("ZIP beklenenden çok büyük açılıyor (zip bombası olabilir); içe aktarılmadı")
+        yield i.filename, veri
+
+
 def _txt_metinleri(dosya_adi, ham):
     if ham[:2] == b"PK":
-        try:
-            z = zipfile.ZipFile(io.BytesIO(ham))
-        except zipfile.BadZipFile:
-            raise ValueError("ZIP dosyası bozuk")
-        secilen = [i for i in z.infolist() if i.filename.lower().endswith(".txt") and not i.is_dir()]
-        toplam = 0
-        for i in secilen:   # hiçbir şey açılmadan ÖNCE: ../ ya da mutlak adlar, boyut ve oran
-            if ".." in i.filename.replace("\\", "/").split("/") or i.filename.startswith(("/", "\\")) or os.path.isabs(i.filename):
-                raise ValueError("ZIP içinde güvensiz dosya adı var; içe aktarılmadı")
-            toplam += i.file_size
-            if i.file_size > ZIP_TEK_AZAMI or toplam > ZIP_TOPLAM_AZAMI or i.file_size > ZIP_ORAN_AZAMI * max(i.compress_size, 1024):
-                raise ValueError("ZIP beklenenden çok büyük açılıyor (zip bombası olabilir); içe aktarılmadı")
-        for i in secilen:
-            ic = os.path.basename(i.filename)
-            with z.open(i) as f:
-                veri = f.read(ZIP_TEK_AZAMI + 1)   # başlıktaki boyut yalan olabilir: gerçek okumayı da sınırla
-            if len(veri) > ZIP_TEK_AZAMI:
-                raise ValueError("ZIP beklenenden çok büyük açılıyor (zip bombası olabilir); içe aktarılmadı")
+        for ad, veri in zip_icerik(ham, lambda a: a.lower().endswith(".txt")):
+            ic = os.path.basename(ad)
             yield (dosya_adi if ic.lower() in ("_chat.txt", "chat.txt") else ic), veri.decode("utf-8-sig", "replace")
     else:
         yield dosya_adi, ham.decode("utf-8-sig", "replace")

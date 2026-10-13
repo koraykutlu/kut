@@ -1,4 +1,8 @@
 """ag_baglam testleri: geçici klasörde sahte veriyle, ağ isteği yok."""
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+import _yalitim  # noqa: E402,F401  (kut'tan önce: LOCALAPPDATA/AGIM_VERI geçici)
+
 import json
 import os
 import sys

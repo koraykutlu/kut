@@ -1,4 +1,8 @@
 """Sır kapısı (ag_sir): anahtar/parola/token uzak modele ve Kut notlarına gitmez. Yalnız uydurma değerler; gerçek `claude` çağrılmaz."""
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+import _yalitim  # noqa: E402,F401  (kut'tan önce: LOCALAPPDATA/AGIM_VERI geçici)
+
 import json
 import os
 import subprocess
@@ -10,6 +14,7 @@ from unittest import mock
 KOK = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "kut")
 sys.path.insert(0, KOK)
 import ag_analiz as an  # noqa: E402
+import ag_model as mdl  # noqa: E402
 import ag_cekirdek as c  # noqa: E402
 import ag_ice_aktar as ia  # noqa: E402
 import ag_kapi as kapi  # noqa: E402
@@ -176,7 +181,7 @@ class UctanUcaTest(unittest.TestCase):
             yakalanan["metin"] = "".join(open(os.path.join(y, f), encoding="utf-8").read()
                                          for y, _, fs in os.walk(d) for f in fs if f.endswith((".txt", ".md")))
             return subprocess.CompletedProcess(arg, 0, json.dumps({"result": "tamam", "session_id": "s"}).encode(), b"")
-        with mock.patch.object(an, "claude_yolu", return_value="claude"), mock.patch.object(an.subprocess, "run", side_effect=sahte):
+        with mock.patch.object(an, "claude_yolu", return_value="claude"), mock.patch.object(mdl.subprocess, "run", side_effect=sahte):
             an.sohbet("şu parola: kullanici-sorusu-99 ne olur?")
         self.assertNotIn("kullanici-sorusu-99", yakalanan["istem"])
         self.assertIn(sir.GIZLI, yakalanan["istem"])
@@ -189,7 +194,7 @@ class UctanUcaTest(unittest.TestCase):
         def sahte(arg, **kw):
             yakalanan["istem"] = kw["input"].decode("utf-8")
             return subprocess.CompletedProcess(arg, 0, json.dumps({"result": "{}"}).encode(), b"")
-        with mock.patch.object(an, "claude_yolu", return_value="claude"), mock.patch.object(an.subprocess, "run", side_effect=sahte):
+        with mock.patch.object(an, "claude_yolu", return_value="claude"), mock.patch.object(mdl.subprocess, "run", side_effect=sahte):
             an._model("Sohbet:\nAda: github token=ghp_" + "a1B2c3D4e5F6g7H8i9J0k1L2 yazdı\nAda: %70assword%3Dkodlu-parola-1")
         self.assertNotIn("a1B2c3D4e5F6g7H8i9J0k1L2", yakalanan["istem"])
         self.assertNotIn("kodlu-parola-1", yakalanan["istem"])

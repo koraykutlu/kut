@@ -62,8 +62,12 @@ def _onceden_karar(kararlar, a, b, tip, bekleyen_da=False):
 
 
 def _ders_anahtarlari(satirlar):
-    """Metindeki 'ISE 256-1' biçimli ders şubeleri → {('ISE 256', '1')}."""
-    return {(f"{m.group(1)} {m.group(2)}".upper(), m.group(3)) for m in re.finditer(r"\b([A-Za-z]{2,5}) (\d{3}[A-Za-z]?)-(\d+)\b", satirlar or "")}
+    """Metindeki 'ISE 256-1' biçimli ders şubeleri → {('ISE 256', '1')}; şubesiz 'ISE 256' (yapıştırılan ders listesi) → ('ISE 256', '')."""
+    metin = satirlar or ""
+    sonuc = {(f"{m.group(1)} {m.group(2)}".upper(), m.group(3)) for m in re.finditer(r"\b([A-Za-z]{2,5}) (\d{3}[A-Za-z]?)-(\d+)\b", metin)}
+    # şubesiz yalnız satır başında (oda kodu gibi satır ortasındaki 'FENS 105' ders sayılmaz)
+    sonuc |= {(f"{m.group(1)} {m.group(2)}".upper(), "") for m in re.finditer(r"(?m)^\s*(?:[-*]\s*)?([A-Za-z]{2,5}) (\d{3}[A-Za-z]?)(?![\w-])", metin)}
+    return sonuc
 
 
 def _ben_dersleri():
@@ -79,8 +83,8 @@ def _ders_eslesir(kisi_dersleri, ben_dersleri):
     """Ortak dersler (şubesi belirtilmemişse kod yeterli) → sıralı 'ISE 256-1' listesi."""
     out = []
     for kod, sube in sorted(kisi_dersleri):
-        if any(kod == bk and (bs is None or bs == sube) for bk, bs in ben_dersleri):
-            out.append(f"{kod}-{sube}")
+        if any(kod == bk and (bs is None or not sube or bs == sube) for bk, bs in ben_dersleri):
+            out.append(f"{kod}-{sube}" if sube else kod)
     return out
 
 

@@ -18,6 +18,15 @@ VARSAYILAN_SURE = 15
 _oturumlar = {}          # belirteç → son etkinlik zamanı
 _dogrulama = threading.Lock()   # PIN denemeleri tek tek sayılır (PBKDF2 dahil kilit altında)
 CEREZ = "kut_oturum"
+kapaninca = []           # oturum kapanınca/süresi dolunca çağrılacaklar (ör. bellekteki sohbet geçmişini silmek)
+
+
+def _kapandi():
+    for f in list(kapaninca):
+        try:
+            f()
+        except Exception:
+            pass
 
 
 def ayar():
@@ -120,10 +129,25 @@ def gecerli(belirtec, dokun=True):
     sure = sure_dk()
     if sure > 0 and time.time() - son > sure * 60:
         _oturumlar.pop(belirtec, None)
+        _kapandi()
         return False
     if dokun:
         _oturumlar[belirtec] = time.time()
     return True
+
+
+def kilitli_mi():
+    """PIN kuruluysa ve süresi dolmamış açık oturum yoksa True. Kilitliyken model çağrısı (ag_model.cagir) yapılmaz.
+    Süresi dolmuş oturumlar burada da düşer (ve kapanış işleri çalışır). PIN kurulu değilse kilit yoktur: False."""
+    if not kurulu():
+        return False
+    sure = sure_dk()
+    simdi = time.time()
+    for t, son in list(_oturumlar.items()):
+        if sure > 0 and simdi - son > sure * 60:
+            _oturumlar.pop(t, None)
+            _kapandi()
+    return not _oturumlar
 
 
 def kapat(belirtec=None):
@@ -131,6 +155,7 @@ def kapat(belirtec=None):
         _oturumlar.pop(belirtec, None)
     else:
         _oturumlar.clear()
+    _kapandi()
 
 
 def cerez_oku(baslik):

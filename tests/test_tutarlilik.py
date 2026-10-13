@@ -1,4 +1,8 @@
 """ag_tutarlilik testleri: sahte veri klasörü, model çağrısı yok."""
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+import _yalitim  # noqa: E402,F401  (kut'tan önce: LOCALAPPDATA/AGIM_VERI geçici)
+
 import os
 import sys
 import tempfile
@@ -19,6 +23,7 @@ def kisi(kid, ad, govde="", **alan):
 class TutarlilikTesti(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(c.veri_klasoru, c.VERI)   # önceki veri klasörüne dön (kaymasın)
         c.veri_klasoru(self.tmp.name)
         open(c.BEN_DOSYA, "w", encoding="utf-8", newline="\n").write(BEN)
         kisi("ayla", "Ayla Test", f"## {c.BEYAN_BASLIK}\n- 10.10.2026 · Birlikte yaşıyoruz (Kerem).\n", temas_sikligi="gunluk",

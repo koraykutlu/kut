@@ -1,7 +1,9 @@
 """Kut ses sistemi: sesli cevap (EMA Lightning) ve sesli girdi (Whisper), ikisi de bu bilgisayarda.
 
-Modeller Kut'un kendi Python'unda değil, kurulu oldukları ortamlarda çalışır (ag_ses_isci.py). Ortamlar ayarlar.json →
-"ses": {"oku_python": ..., "yaz_python": ..., "yaz_model": "large-v3"} ile verilir; verilmezse kasadaki bilinen yerlere bakılır.
+Modeller Kut'un kendi Python'unda değil, kurulu oldukları ortamlarda çalışır (ag_ses_isci.py). Ortam arama sırası:
+1) ayarlar.json → "ses": {"oku_python": ..., "yaz_python": ..., "yaz_model": "large-v3"} (açık yol), 2) Kut'un kendi kurduğu ortam
+(ag_ses_kur.py, kullanıcı onayıyla; %LOCALAPPDATA%/agim/ses), 3) kasadaki bilinen yerler (geliştirici makinesi),
+4) paketleri ve model önbelleği hazır sistem Python'u. Hiçbiri yoksa ses kapalıdır ve arayüz kurulum teklif eder.
 İşçi ilk istekte açılır, modeli bellekte tutar, 15 dk boşta kalınca kapanır (ekran kartı belleği boşalsın).
 Ses kaydı diske yazılmaz; metin internete gönderilmez.
 """
@@ -10,11 +12,11 @@ import json
 import os
 import re
 import subprocess
-import sys
 import threading
 import time
 
 import ag_ice_aktar as ia
+import ag_ses_kur as kur
 
 KOK = os.path.dirname(os.path.abspath(__file__))
 ISCI = os.path.join(KOK, "ag_ses_isci.py")
@@ -32,6 +34,9 @@ def python_yolu(tur):
     yol = _ayar().get(f"{tur}_python")
     if yol:
         return yol if os.path.isfile(yol) else None
+    kurulan = kur.python_yolu(tur)
+    if kurulan:
+        return kurulan
     d = KOK
     for _ in range(4):
         for parca in BILINEN[tur]:
@@ -39,7 +44,7 @@ def python_yolu(tur):
             if os.path.isfile(aday):
                 return aday
         d = os.path.dirname(d)
-    return None
+    return kur.sistemde_python(tur, _ayar().get("yaz_model") or "large-v3")
 
 
 class Isci:
@@ -52,11 +57,13 @@ class Isci:
             raise RuntimeError("ses ortamı bulunamadı")
         arg = [py, "-I", ISCI, self.tur]
         if self.tur == "yaz":
-            arg += [_ayar().get("yaz_model") or "large-v3", _ayar().get("yaz_hesap") or "int8_float16"]
+            model = _ayar().get("yaz_model") or (kur.yaz_model() if kur.kut_mu(py) else None) or "large-v3"
+            arg += [model, _ayar().get("yaz_hesap") or "int8_float16"]
         os.makedirs(ia.DEPO, exist_ok=True)
         gunluk = open(os.path.join(ia.DEPO, f"ses-{self.tur}.log"), "a", encoding="utf-8")
+        ek = kur.isci_ortam(py)   # Kut'un kurduğu ortamda model önbelleği Kut'un klasöründedir
         self.p = subprocess.Popen(arg, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=gunluk, cwd=KOK,
-                                  creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+                                  env={**os.environ, **ek} if ek else None, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         gunluk.close()
         satir = self.p.stdout.readline()
         ilk = json.loads(satir) if satir else {"hazir": False, "hata": f"işçi açılamadı (ses-{self.tur}.log)"}
@@ -123,8 +130,23 @@ threading.Thread(target=_bekci, daemon=True).start()
 atexit.register(lambda: [i.durdur() for i in ISCILER.values()])
 
 
+def eksik():
+    """Ortamı bulunamayan ses parçaları (kurulum teklifi bunlar için)."""
+    return [t for t in ISCILER if not python_yolu(t)]
+
+
 def durum():
-    return {t: bool(python_yolu(t)) for t in ISCILER} | {"hata": {t: i.hata for t, i in ISCILER.items() if i.hata}}
+    e = eksik()
+    return {t: t not in e for t in ISCILER} | {"hata": {t: i.hata for t, i in ISCILER.items() if i.hata}} | {
+        "eksik": e, "kurulum": kur.ozet(), "teklif": bool(e) and not kur.soru()}
+
+
+def kaldir():
+    """Kut'un kurduğu ses ortamını siler; önce açık işçileri kapatır (dosyalar kullanımda kalmasın)."""
+    for i in ISCILER.values():
+        with i.kilit:
+            i.durdur()
+    return kur.kaldir()
 
 
 def konusma_metni(md):
