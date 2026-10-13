@@ -1,0 +1,115 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Kut kurgusal demo//TR
+X-WR-CALNAME:deniz.demo@lodos.example
+BEGIN:VEVENT
+UID:kut-demo-0@ornek.example
+DTSTART:20260714T090000Z
+DTEND:20260714T100000Z
+SUMMARY:Proje ofis saati
+ORGANIZER;CN=Deniz Demo:mailto:deniz.demo@lodos.example
+ATTENDEE;CN=Aylin Masalcı;PARTSTAT=ACCEPTED:mailto:aylin.masalci@kuzeyova.example
+ATTENDEE;CN=Deniz Demo;PARTSTAT=ACCEPTED:mailto:deniz.demo@lodos.example
+DESCRIPTION:Bu açıklama alınmaz.
+LOCATION:Kurgusal ofis
+END:VEVENT
+BEGIN:VEVENT
+UID:kut-demo-1@ornek.example
+DTSTART:20260804T110000Z
+DTEND:20260804T120000Z
+SUMMARY:Hackathon hazırlığı
+ORGANIZER;CN=Deniz Demo:mailto:deniz.demo@lodos.example
+ATTENDEE;CN=Zeynep Örnekoğlu;PARTSTAT=ACCEPTED:mailto:zeynep.ornekoglu@ornek.example
+ATTENDEE;CN=Deniz Demo;PARTSTAT=ACCEPTED:mailto:deniz.demo@lodos.example
+DESCRIPTION:Bu açıklama alınmaz.
+LOCATION:Kurgusal ofis
+END:VEVENT
+BEGIN:VEVENT
+UID:kut-demo-2@ornek.example
+DTSTART:20260826T130000Z
+DTEND:20260826T140000Z
+SUMMARY:Pano fikri
+ORGANIZER;CN=Deniz Demo:mailto:deniz.demo@lodos.example
+ATTENDEE;CN=Aylin Masalcı;PARTSTAT=ACCEPTED:mailto:aylin.masalci@kuzeyova.example
+ATTENDEE;CN=Deniz Demo;PARTSTAT=ACCEPTED:mailto:deniz.demo@lodos.example
+DESCRIPTION:Bu açıklama alınmaz.
+LOCATION:Kurgusal ofis
+END:VEVENT
+BEGIN:VEVENT
+UID:kut-demo-3@ornek.example
+DTSTART:20260902T100000Z
+DTEND:20260902T110000Z
+SUMMARY:Jüri kriterleri
+ORGANIZER;CN=Deniz Demo:mailto:deniz.demo@lodos.example
+ATTENDEE;CN=Kerem Kurgun;PARTSTAT=ACCEPTED:mailto:kerem.kurgun@ornek.example
+ATTENDEE;CN=Deniz Demo;PARTSTAT=ACCEPTED:mailto:deniz.demo@lodos.example
+DESCRIPTION:Bu açıklama alınmaz.
+LOCATION:Kurgusal ofis
+END:VEVENT
+BEGIN:VEVENT
+UID:kut-demo-4@ornek.example
+DTSTART:20260908T150000Z
+DTEND:20260908T160000Z
+SUMMARY:Tanışma kahvesi
+ORGANIZER;CN=Deniz Demo:mailto:deniz.demo@lodos.example
+ATTENDEE;CN=Selçuk Örnekçi;PARTSTAT=ACCEPTED:mailto:selcuk.ornekci@ornek.example
+ATTENDEE;CN=Deniz Demo;PARTSTAT=ACCEPTED:mailto:deniz.demo@lodos.example
+DESCRIPTION:Bu açıklama alınmaz.
+LOCATION:Kurgusal ofis
+END:VEVENT
+BEGIN:VEVENT
+UID:kut-demo-5@ornek.example
+DTSTART:20260916T090000Z
+DTEND:20260916T100000Z
+SUMMARY:Başvuru formu
+ORGANIZER;CN=Deniz Demo:mailto:deniz.demo@lodos.example
+ATTENDEE;CN=Zeynep Örnekoğlu;PARTSTAT=ACCEPTED:mailto:zeynep.ornekoglu@ornek.example
+ATTENDEE;CN=Deniz Demo;PARTSTAT=ACCEPTED:mailto:deniz.demo@lodos.example
+DESCRIPTION:Bu açıklama alınmaz.
+LOCATION:Kurgusal ofis
+END:VEVENT
+BEGIN:VEVENT
+UID:kut-demo-6@ornek.example
+DTSTART:20260922T140000Z
+DTEND:20260922T150000Z
+SUMMARY:Seminer planı
+ORGANIZER;CN=Deniz Demo:mailto:deniz.demo@lodos.example
+ATTENDEE;CN=Aylin Masalcı;PARTSTAT=ACCEPTED:mailto:aylin.masalci@kuzeyova.example
+ATTENDEE;CN=Deniz Demo;PARTSTAT=ACCEPTED:mailto:deniz.demo@lodos.example
+DESCRIPTION:Bu açıklama alınmaz.
+LOCATION:Kurgusal ofis
+END:VEVENT
+BEGIN:VEVENT
+UID:kut-demo-7@ornek.example
+DTSTART:20260930T160000Z
+DTEND:20260930T170000Z
+SUMMARY:Mentorluk görüşmesi
+ORGANIZER;CN=Deniz Demo:mailto:deniz.demo@lodos.example
+ATTENDEE;CN=Nilay Taslak;PARTSTAT=ACCEPTED:mailto:nilay.taslak@ornek.example
+ATTENDEE;CN=Deniz Demo;PARTSTAT=ACCEPTED:mailto:deniz.demo@lodos.example
+DESCRIPTION:Bu açıklama alınmaz.
+LOCATION:Kurgusal ofis
+END:VEVENT
+BEGIN:VEVENT
+UID:kut-demo-8@ornek.example
+DTSTART:20261006T100000Z
+DTEND:20261006T110000Z
+SUMMARY:Jüri ön toplantısı
+ORGANIZER;CN=Deniz Demo:mailto:deniz.demo@lodos.example
+ATTENDEE;CN=Kerem Kurgun;PARTSTAT=ACCEPTED:mailto:kerem.kurgun@ornek.example
+ATTENDEE;CN=Deniz Demo;PARTSTAT=ACCEPTED:mailto:deniz.demo@lodos.example
+DESCRIPTION:Bu açıklama alınmaz.
+LOCATION:Kurgusal ofis
+END:VEVENT
+BEGIN:VEVENT
+UID:kut-demo-9@ornek.example
+DTSTART:20261009T120000Z
+DTEND:20261009T130000Z
+SUMMARY:Ortak proje
+ORGANIZER;CN=Deniz Demo:mailto:deniz.demo@lodos.example
+ATTENDEE;CN=Selçuk Örnekçi;PARTSTAT=ACCEPTED:mailto:selcuk.ornekci@ornek.example
+ATTENDEE;CN=Deniz Demo;PARTSTAT=ACCEPTED:mailto:deniz.demo@lodos.example
+DESCRIPTION:Bu açıklama alınmaz.
+LOCATION:Kurgusal ofis
+END:VEVENT
+END:VCALENDAR

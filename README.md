@@ -6,13 +6,16 @@ kimi ihmal ettiğini ve bu hafta kime yazman gerektiğini hatırla. Hesap yok, b
 ![Kut: harita, kişi kartı, bu hafta ve Pusula](docs/img/kut-demo.gif)
 
 > *Kut (formerly "Ağım") is a local, private personal-network app: a photo map of the people you know, contact log, relationship graph,
-> conflict-of-interest hints and a "who should I reach out to this week" list. It is a Python 3 standard-library HTTP server bound to
-> `127.0.0.1` plus a single-page HTML UI; no accounts, no cloud, no dependencies. Your data lives as plain Markdown files and never enters
-> this repository. An optional AI assistant (Claude Code) can analyse notes, but every record passes a local privacy gate first (see
-> [Gizlilik](#gizlilik)). Try it without any personal data: `py -3 demo/demo_veri.py --hedef demo-veri`, then
+> conflict-of-interest hints, a "who should I reach out to this week" list and a log of promises you gave or received. It is a Python 3
+> standard-library HTTP server bound to `127.0.0.1` plus a single-page HTML UI; no accounts, no cloud, no dependencies. Your data lives as
+> plain Markdown files and never enters this repository. v1.1 adds a first-run setup wizard with a guided tour, calendar (.ics) and
+> LinkedIn (CSV) import, a Settings window for optional sources, a choice of AI provider (Claude Code, Codex, Gemini or local Ollama;
+> no API keys stored) and a built-in fictional demo story ("Deniz'in salısı") that never touches your data. The AI assistant is optional:
+> every record passes a local privacy gate first (see [Gizlilik](#gizlilik)). The interface is in Turkish. Try it without any personal data:
+> the "Önce bir örnekle göster" button in the first-run wizard, or `py -3 demo/demo_veri.py --hedef demo-veri` then
 > `py -3 kut.pyw --veri demo-veri` ([Demo verisiyle deneme](#demo-verisiyle-deneme)). Licence: MIT.*
 
-Bu README'deki tüm ekran görüntüleri ve GIF, `demo/demo_veri.py`'nin ürettiği **tamamen kurgusal** verilerle çekilmiştir; gerçek kişi yoktur.
+Bu README'deki tüm ekran görüntüleri ve GIF (v1.1 arayüzü), `demo/demo_veri.py`'nin ürettiği **tamamen kurgusal** verilerle (merkezdeki kişi "Deniz Demo"), içe aktarma örnekleri `demo/ornek/` altındaki kurgusal dosyalarla ve uygulama içi "Deniz'in salısı" demosuyla çekilmiştir; gerçek kişi yoktur.
 
 ## İçindekiler
 [Neler yapar](#neler-yapar) · [Gizlilik](#gizlilik) · [Kurulum](#kurulum) · [Demo verisiyle deneme](#demo-verisiyle-deneme) ·
@@ -43,6 +46,9 @@ yön, metin, isteğe bağlı son tarih; *Tamamla* ya da *İptal*. Kaynak, kişi 
 `- [ ] 2026-10-13 · ben → o · kitabı göndermek (son: 2026-10-17)` (`ben → o` = sen verdin, `o → ben` = o verdi; tamamlanan `[x]` ve `(tamam: GGG)`, iptal `[-]` ve `(iptal: GGG)`;
 iptal satırı silinmez, yazımdan önce `arsiv/surum/`'a kopya alınır). Gecikmiş ya da son tarihi 7 gün içinde olan sözler **Bu hafta** listesinde "söz" etiketiyle ve
 "verdiğin söz: 2 gün gecikti" gibi görünür; Pusula hamleleriyle karışmaz.
+
+![Kişi kartında Sözler sekmesi](docs/img/kisi-sozler.png)
+
 **Kut'a sor**'da "Ayşe'ye kitabı cuma göndereceğim" yazarsan Kut kişiyi, yönü, metni ve tarihi (yarın, cuma, haftaya, ay sonu, 3 gün sonra, 17 Ekim...) yerelde ayrıştırır ve
 **"Ayşe'ye söz olarak ekleyeyim mi? (son: 16.10)"** diye sorar; sen onaylamadan hiçbir şey yazılmaz. Soru, olumsuz, geçmiş ve koşullu cümleler (ve belirsiz ad) öneri üretmez. Sözler kişi dosyasının parçasıdır,
 yani uzak modele yalnız kapıdan geçerek gider; kişi **🔒 Bu kişi yapay zekâya gönderilmez** ise hiç gitmez.
@@ -71,7 +77,11 @@ Hedeflerini (başlık, tür, son tarih, öncelik, başarı ölçütü, konu keli
 Pusula her zaman göz önündedir: üst çubukta vurgulu **◎ Pusula** düğmesi (kısayol **P**) ve sol panelin en üstünde bir **Pusula kartı** durur. Kart aktif hedeflerini, bu haftanın sıradaki hamlesini (strateji okumasından ilk hamle, ilk adımı ve ilk kanıtıyla) ve tek tıkla Pusula'yı açan düğmeyi gösterir. Hedefin yoksa *İlk hedefini yaz*, strateji henüz çıkarılmadıysa *Bu haftanın stratejisini çıkar* der; ikincisi seçili yapay zekâ sağlayıcısına gittiği için başlatmadan önce onay ister (sağlayıcı seçimi, kişi kapısı ve sır süzgeci aynen geçerli). Pusula penceresi yalnız *Hamleler, Hedefler, Keşfet · Vekiller, Keşfet · Etkinlikler* sekmelerini taşır; kaynak, okul, güncelleme, ses ve kasa kartları ⚙ **Ayarlar** penceresindedir.
 
 ### İlk açılış: kurulum ve tanıtım
-İlk PIN belirlendikten sonra Kut bir kez bir sihirbaz açar; önce kurulumu yapar, sonra özellikleri tanıtır. Kurulum adımlarının her biri atlanabilir: (1) adın ve kim olduğun (Profilim alanları), (2) yapay zekâ sağlayıcısı (Claude Code önerilir; Codex/Gemini seçilirse gizlilik uyarısı ve onay istenir, kurulu olmayanlar soluk), (3) sesli iletişim (mevcut Whisper + EMA Lightning kurulum sorusu; *Şimdi değil* seçilebilir), (4) kasa bağlıysa *Kasadan kişileri al* (kasa yoksa bu adım görünmez), (5) okul ve dersler ile İçe aktar penceresine yönlendirme. Ardından **sahne ışığı turu** başlar: tanıtılan öğe kendi renginde ve tam parlak kalır, gerisi koyu bir örtüyle gölgelenir; yanındaki kartta başlık, kısa açıklama, *Geri / İleri / Turu bitir* ve adım sayacı vardır (klavye: ← → Esc; `prefers-reduced-motion` açıksa geçişler kapanır). Sıra: ağ haritası, kişi kartı, Doğrula ("Asistan soruyor"), Bu hafta, Kut'a sor ve sesli giriş, Pusula, İçe aktar, Ayarlar, Kilit. Hedef ekranda yoksa (boş ağ, dar pencere) adım sessizce atlanır; kapalı bir panel tur için açılır ve sonra eski haline döner. Tamamlanma ayarlarda tutulur (`ayarlar.json` → `sihirbaz.bitti`; yazan uç `/api/sihirbaz`: kilit + anahtar + yerel Origin). Sihirbazı kapatmak da "bitti" sayılır; ⚙ Ayarlar → *Kurulum ve tanıtımı aç* (ya da *Yalnız özellik turu*) ile istediğin zaman yeniden açarsın. Yeni tur adımı eklemek `kut/ag_sablon.html` içindeki `TUR_ADIMLARI` dizisine bir satır eklemektir (`id`, hedef seçici `hedef`, `baslik`, `metin`).
+İlk PIN belirlendikten sonra Kut bir kez bir sihirbaz açar; önce kurulumu yapar, sonra özellikleri tanıtır. Hoş geldin adımı seni profilindeki ilk adla karşılar ve günün saatine göre kısa bir cümle seçer; *Önce bir örnekle göster* düğmesi kurgusal bir ağı oynatır ([Demo verisiyle deneme](#demo-verisiyle-deneme)). Kurulum adımlarının her biri atlanabilir, zaten bilinenler (kayıtlı ad ve fotoğraf, seçili sağlayıcı, kurulu ses, alınmış kasa kişileri, okul ve dersler) otomatik atlanır; *Hazır olanları da gez* hepsini gösterir: (1) adın ve kim olduğun (Profilim alanları), (2) yapay zekâ sağlayıcısı (Claude Code önerilir; Codex/Gemini seçilirse gizlilik uyarısı ve onay istenir, kurulu olmayanlar soluk), (3) sesli iletişim (mevcut Whisper + EMA Lightning kurulum sorusu; *Şimdi değil* seçilebilir), (4) kasa bağlıysa *Kasadan kişileri al* (kasa yoksa bu adım görünmez), (5) okul ve dersler ile İçe aktar penceresine yönlendirme. Ardından **sahne ışığı turu** başlar: tanıtılan öğe kendi renginde ve tam parlak kalır, gerisi koyu bir örtüyle gölgelenir; yanındaki kartta başlık, kısa açıklama, *Geri / İleri / Turu bitir* ve adım sayacı vardır (klavye: ← → Esc; `prefers-reduced-motion` açıksa geçişler kapanır). Sıra: ağ haritası, kişi kartı, Sözler, "Bu kişi yapay zekâya gönderilmez" anahtarı, Doğrula ("Asistan soruyor"), Bu hafta, Kut'a sor ve sesli giriş, Pusula, İçe aktar, Ayarlar, Kilit. Hedef ekranda yoksa (boş ağ, dar pencere) adım sessizce atlanır; kapalı bir panel tur için açılır ve sonra eski haline döner. Tamamlanma ayarlarda tutulur (`ayarlar.json` → `sihirbaz.bitti`; yazan uç `/api/sihirbaz`: kilit + anahtar + yerel Origin). Sihirbazı kapatmak da "bitti" sayılır; ⚙ Ayarlar → *Kurulum ve tanıtımı aç* (ya da *Yalnız özellik turu*) ile istediğin zaman yeniden açarsın. Yeni tur adımı eklemek `kut/ag_sablon.html` içindeki `TUR_ADIMLARI` dizisine bir satır eklemektir (`id`, hedef seçici `hedef`, `baslik`, `metin`).
+
+| Hoş geldin adımı | Yapay zekâ sağlayıcısı adımı |
+|---|---|
+| ![Sihirbaz, karşılama](docs/img/sihirbaz-karsilama.png) | ![Sihirbaz, yapay zekâ sağlayıcısı](docs/img/sihirbaz-yapay-zeka.png) |
 
 ### Diğer özellikler
 - **İçe aktarma (WhatsApp, rehber, takvim, LinkedIn, ders listesi):** WhatsApp sohbetini (.txt/.zip, "medya olmadan"), .vcf rehberi, takvim dışa aktarmasını (.ics), LinkedIn veri kopyasını (Connections.csv / messages.csv) ya da okulundan kopyaladığın ders listesini *İçe aktar* penceresine bırakırsın; önce ne olacağını görürsün (önizleme hiçbir şey yazmaz), sonra onaylarsın. Mesaj içerikleri, toplantı açıklaması ve konumu saklanmaz; yalnız kim, ne zaman, hangi kanal. Ayrıntı: [Kullanım](#kullanım-ayrıntıları).
@@ -80,7 +90,18 @@ Pusula her zaman göz önündedir: üst çubukta vurgulu **◎ Pusula** düğmes
 - **PIN kilidi:** açılışta PIN sorulur; kilitliyken sunucu hiçbir kişisel veri göndermez (görsel örtü değil, sunucu tarafında).
 - **İkinci beyin köprüsü (isteğe bağlı, salt okur):** bir not kasasındaki açık işleri ve kişinin geçtiği satırları gösterir; kasaya hiçbir şey yazmaz.
 - **Yerel ses (isteğe bağlı):** Whisper ile konuşmayı yazıya çevirir, EMA Lightning ile cevapları Türkçe okur; hepsi bu bilgisayarda çalışır, ses diske yazılmaz. Kurulu değilse Kut, onayınla indirmeyi teklif eder (boyutlar önceden gösterilir).
-- **Görünüm:** bu bilgisayarda çizilen WebGL gökyüzü, gündüz/gece teması.
+- **Yapay zekâ sağlayıcısı:** Claude Code (önerilen), Codex CLI, Gemini CLI ya da yerel Ollama; sihirbazdan ya da Profilim → *Yapay zekâ sağlayıcısı*'ndan seçilir. Kut API anahtarı istemez ve saklamaz; ayrıntı ve sınırlar [Gizlilik](#gizlilik)'te.
+- **Görünüm:** bu bilgisayarda çizilen WebGL gökyüzü, gündüz/gece teması; pencere ve sekme geçişlerinde kısa arayüz sesleri (⚙ Ayarlar → *Arayüz sesleri*, varsayılan açık, kapatılabilir).
+
+İçe aktarma önizlemeleri (kurgusal `demo/ornek/takvim.ics` ve `demo/ornek/linkedin-Connections.csv` ile; önizleme hiçbir şey yazmaz):
+
+| Takvim (.ics) | LinkedIn (Connections.csv) |
+|---|---|
+| ![İçe aktar, takvim önizlemesi](docs/img/ice-takvim.png) | ![İçe aktar, LinkedIn önizlemesi](docs/img/ice-linkedin.png) |
+
+Üst çubuktaki ⚙ **Ayarlar** penceresi kurulum ve tanıtımı, arayüz seslerini, isteğe bağlı dış kaynakları, okul bağdaştırıcısını, güncellemeyi ve sesli iletişimi (kasa bağlıysa kasa kartını da) tek yerde toplar:
+
+![Ayarlar penceresi](docs/img/ayarlar.png)
 
 ![Kilit ekranı](docs/img/kilit.png)
 
@@ -202,7 +223,7 @@ Sunucu varsayılan olarak `http://127.0.0.1:47318/` adresinde açılır ve taray
 - **Windows kısayolu:** `baslatma\kur.ps1`'e sağ tık → *PowerShell ile çalıştır* (verini başka bir klasörde tutmak için: `powershell -ExecutionPolicy Bypass -File baslatma\kur.ps1 -Veri KLASÖR`). Masaüstü ve Başlat menüsüne **Kut** kısayolu gelir; Kut, Edge/Chrome uygulama penceresinde (ayrı profil) açılır. Varsayılan tarayıcı için `ayarlar.json`'a `"tarayici": "varsayilan"` yaz.
 - **macOS:** Terminal'de bir kez `chmod +x baslatma/Kut.command`, sonra `baslatma/Kut.command`'a çift tıkla (Python 3 gerekli: `python3 --version`).
 
-İlk açılışta bir PIN belirlersin, sonra merkezdeki kendi düğümüne tıkla → **Profilimi düzenle** (ad, fotoğraf, asistanının adı).
+İlk açılışta bir PIN belirlersin; ardından kurulum sihirbazı adını, yapay zekâ sağlayıcını ve diğer isteğe bağlı adımları sorar (hepsi atlanabilir, bkz. *İlk açılış: kurulum ve tanıtım*). Sonradan değiştirmek için merkezdeki kendi düğümüne tıkla → **Profilimi düzenle** (ad, fotoğraf, asistanının adı).
 
 ## Güncelleme
 
@@ -217,9 +238,15 @@ Sürüm numarası ve güncelleme denetimi **Ayarlar → Kaynaklar → Güncellem
 
 ## Demo verisiyle deneme
 
+**Uygulama içi demo ("Deniz'in salısı").** Hiçbir şey kurmadan görmek için ilk açılış sihirbazının hoş geldin adımındaki ya da ⚙ Ayarlar → *Kurulum ve tanıtım*'daki **Önce bir örnekle göster** düğmesini kullan. Kurgusal bir kişinin ağında altı sahne oynar: ağ, Pusula'nın fark ettiği soğumuş bağ, Kut'a sor, söz yakalama, bağın yeniden ısınması ve kilit. Sahne ışığı turuyla aynı motoru kullanır. Senin verine ve ayar klasörüne dokunmaz: demo geçici bir klasörde ayrı bir veri kopyasıyla çalışır, kapatınca, kilit kapanınca, 45 dakika boşta kalınca ya da çıkışta bu klasör silinir. Ağa ve modele çıkmaz ("Kut'a sor" cevapları hazırdır, söz yakalama yerel kural motorudur). Anlatım sesi isteğe bağlıdır: `kut/demo_ses/` altında ses dosyası varsa çalar, yoksa demo sessiz sürer.
+
+| Pusula fark etti | Söz verdin, Kut yakaladı | Bağ yeniden ısındı |
+|---|---|---|
+| ![Demo, Pusula](docs/img/demo-sali-pusula.png) | ![Demo, söz yakalama](docs/img/demo-sali-soz.png) | ![Demo, bağ yeniden ısındı](docs/img/demo-sali-isinma.png) |
+
 Kendi verini girmeden denemek (ya da ekran görüntüsü/video çekmek) için `demo/demo_veri.py` 31 kurgusal kişi (ikisi dolaylı), ilişkiler, bekleyen çıkarımlar,
 iki hedef ve örnek bir strateji okuması üretir. Tüm adlar ve kurumlar uydurmadır; kişilerin fotoğrafı yoktur; harita onları tür renginde dolu kare ve baş harf olarak çizer.
-Tarihler bugüne göre göreli üretilir, böylece "Bu hafta" listesi her zaman dolu gelir.
+Tarihler bugüne göre göreli üretilir, böylece "Bu hafta" listesi her zaman dolu gelir. İçe aktarmayı denemek için `demo/ornek/takvim.ics` ve `demo/ornek/linkedin-Connections.csv` kurgusal dosyalarını *İçe aktar* penceresine bırakabilirsin (adlar bu demo verisiyle eşleşir; tarihleri sabittir; önizleme hiçbir şey yazmaz, yazma yalnız *Onayla ve yaz* ile olur).
 
 ```powershell
 py -3 demo/demo_veri.py --hedef "$env:TEMP\kut-demo"        # --hedef verilmezse geçici klasör açılır ve yolu yazdırılır
@@ -268,7 +295,7 @@ Demoda çevrimdışı kalmak ve model çağrısını kapatmak istersen, `kut-dem
   | Rehber | .vcf | ad, telefon, e-posta, kurum, rol, fotoğraf | not alanları | seçtiğin adaylar ağa girer |
   | Takvim | .ics ya da Google Takeout .zip (Google, Outlook, Apple) | katılımcı (e-posta + ad), tarih, `SUMMARY` yalnız "Başlıkları yaz" açıksa kısaltılmış (varsayılan kapalı, "toplantı" yazılır; sağlık/hukuk/maaş gibi başlıklar açıkken de "toplantı" olur) | açıklama, konum, bağlantı, ek, alarm | mevcut kişilere `GG.AA.YYYY · takvim · toplantı` satırı ve yalnız ileri giden `son_temas`; tanınmayan katılımcılar seçersen yeni kişi (yakınlık 0); e-postası boş kişilerin e-posta önerisi Doğrula'ya düşer. Tekrarlayan etkinlikler yalnız geçmişte, seri başına en fazla 60; 15'ten çok katılımcılı toplantılar yakınlık sayılmaz (istersen sayılır); kendi adresin çıkarılır |
   | LinkedIn | veri kopyası .zip, `Connections.csv` (başta "Notes:" olabilir), `messages.csv` | bağlantının adı, URL, e-posta, şirket, pozisyon, bağlanma tarihi; mesajlarda yalnız kiminle ve hangi gün | mesaj içeriği ve konusu hiçbir yerde okunup saklanmaz; ZIP'teki diğer dosyalar açılmaz | mevcut kişide yalnız boş linkedin/kurum/rol Doğrula'ya öneri; bağlanma tarihi `## Kaynaklar` notu; mesaj günleri `linkedin` temas satırı; yeni bağlantılar yalnız seçersen (yakınlık 0, tür tahmini yok); binlerce bağlantıda arama, süzme ve toplu seçim |
-  | Ders listesi | yapıştırılan metin | ders kodu, ders adı, hoca adı (Prof. Dr., Doç. Dr., Dr. Öğr. Üyesi, Öğr. Gör., Arş. Gör. gibi unvanlar atılır) | — | dersler profilene, hocalar ağa (yakınlık 0, tür akademi, `## Dersler`, `hocasi` bağı); okul sitesine istek yok |
+  | Ders listesi | yapıştırılan metin | ders kodu, ders adı, hoca adı (Prof. Dr., Doç. Dr., Dr. Öğr. Üyesi, Öğr. Gör., Arş. Gör. gibi unvanlar atılır) | yok | dersler profilene, hocalar ağa (yakınlık 0, tür akademi, `## Dersler`, `hocasi` bağı); okul sitesine istek yok |
 
   Kendi e-postanı "Takvimdeki e-posta adresin" alanına yazarsan (ya da takvim dosyasında takvim adı e-postaysa) Kut seni katılımcılardan çıkarır ve `ayarlar.json` → `ben_epostalari`'na kaydeder.
   Başlık tercihi `ayarlar.json` → `takvim_baslik` (true/false) olarak hatırlanır.
@@ -379,7 +406,7 @@ Profilinde `okul` boşsa ya da tanımsızsa bu özellik kapalıdır ve hiçbir o
 kut.pyw        başlatıcı (kut/ klasörünü yola ekler, sunucuyu açar)
 kut/           uygulama kodu (ag_*.py), sürüm (surum.py), güncelleme (ag_guncelle.py), veri göçleri (goc.py), arayüz (ag_sablon.html), simge
 tests/         birim testleri
-demo/          kurgusal demo verisi üreticisi
+demo/          kurgusal demo verisi üreticisi (demo_veri.py) ve içe aktarma örnek dosyaları (ornek/)
 docs/          ekran görüntüleri (img/) ve tasarım taslakları (tasarim/)
 paketleme/     Kut.exe derleme (kut.spec, paketle.ps1; Kut.exe.sha256 de üretir)
 baslatma/      Windows kısayol kurucu (kur.ps1), macOS başlatıcı (Kut.command)
