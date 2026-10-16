@@ -41,7 +41,16 @@ INLINE_ATLANAN = {"gelen", "belgeler", "foto", "arsiv"}
 # Kendi yerleşik araçlarıyla diski okuyabilen sağlayıcılar: seçerken açık onay gerekir (ayarla: onay=True).
 ARAC_UYARISI = ("Bu araç bilgisayarındaki dosyaları kendi başına açabilir. Kut, \"kimseye gitmesin\" dediğin kişileri yalnız kendi "
                 "gönderdiği metinden ayıklar; araç dosyaları kendisi açarsa bu koruma işlemez ve okunan bilgi aracın şirketine gidebilir "
-                "(Kut Gemini'de araçları kapatmaya çalışır, Codex'te kapatamaz). Ağında hassas kişiler varsa Claude Code ya da Ollama kullan.")
+                "({not}). Ağında hassas kişiler varsa Claude Code ya da Ollama kullan.")
+ARAC_NOTU = {"codex": "Kut Codex'te bu araçları kapatamaz",
+             "gemini": "Kut Gemini'de araçları kapatmaya çalışır, ama bunun her sürümde işlediğini doğrulayamaz"}
+
+
+def arac_uyarisi(sid):
+    """Diski kendi okuyabilen sağlayıcı için gizlilik uyarısı; diğerleri için boş metin."""
+    if not SAGLAYICILAR.get(sid, {}).get("arac_riski"):
+        return ""
+    return ARAC_UYARISI.replace("{not}", ARAC_NOTU.get(sid, "Kut bu aracın araçlarını kapatamayabilir"))
 # Gemini CLI 0.62 yerleşik araç adları (docs/reference/tools.md). Politika "*" hepsini reddeder; bu liste yedek katmandır.
 GEMINI_ARACLAR = ["run_shell_command", "glob", "grep_search", "search_file_content", "list_directory", "read_file", "read_many_files",
                   "write_file", "replace", "ask_user", "write_todos", "activate_skill", "get_internal_docs", "enter_plan_mode",
@@ -166,7 +175,7 @@ def durum():
     liste = []
     for sid, s in SAGLAYICILAR.items():
         d = {"id": sid, "ad": s["ad"], "onerilen": s["onerilen"], "uzak": uzak_mi(sid), "kurulu": hazir(sid), "aciklama": s["aciklama"], "gizlilik": s.get("gizlilik", ""),
-             "model": str((a.get("modeller") or {}).get(sid) or ""), "uyari": ARAC_UYARISI if s.get("arac_riski") else ""}
+             "model": str((a.get("modeller") or {}).get(sid) or ""), "uyari": arac_uyarisi(sid)}
         if sid == "claude":
             d["model"] = ""   # Claude modelleri ayarlar.json'daki eski anahtarlardadır
         liste.append(d)
@@ -183,7 +192,7 @@ def ayarla(g):
             raise ValueError(SAGLAYICILAR[g["saglayici"]]["kurulum"])
         degisti = g["saglayici"] != secili()
         if degisti and SAGLAYICILAR[g["saglayici"]].get("arac_riski") and g.get("onay") is not True:
-            raise ValueError("Onay gerekli. " + ARAC_UYARISI)
+            raise ValueError("Onay gerekli. " + arac_uyarisi(g["saglayici"]))
         a["saglayici"] = g["saglayici"]
         if degisti:
             gecmis_temizle()

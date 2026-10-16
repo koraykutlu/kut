@@ -40,11 +40,26 @@ def _json_oku(yol, bos):
 
 
 def _json_yaz(yol, veri):
-    os.makedirs(DEPO, exist_ok=True)
-    gecici = yol + ".tmp"
-    with open(gecici, "w", encoding="utf-8") as f:
-        json.dump(veri, f, ensure_ascii=False)
-    os.replace(gecici, yol)
+    """Atomik yazma: benzersiz geçici dosya + os.replace (aynı anda yazan iki iş parçacığı/süreç birbirinin geçicisini ezmez).
+    Windows'ta hedef o an okunuyorsa os.replace PermissionError verebilir: kısa beklemeyle birkaç kez yeniden denenir."""
+    import tempfile
+    import time
+    os.makedirs(os.path.dirname(yol) or DEPO, exist_ok=True)
+    fd, gecici = tempfile.mkstemp(prefix=os.path.basename(yol) + ".", suffix=".tmp", dir=os.path.dirname(yol) or DEPO)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(veri, f, ensure_ascii=False)
+        for deneme in range(8):
+            try:
+                os.replace(gecici, yol)
+                return
+            except PermissionError:
+                if deneme == 7:
+                    raise
+                time.sleep(0.02 * (deneme + 1))
+    finally:
+        if os.path.exists(gecici):
+            os.remove(gecici)
 
 
 def ayarlar():
@@ -256,6 +271,27 @@ def _bul(havuz, ad, telefonlar):
 
 
 
+BOTLAR = {"Meta AI"}
+
+
+def _zaten_var(havuz, s):
+    """Bu sohbetin aynısı ya da daha geniş bir dışa aktarması zaten havuzda mı? (son tarih ve mesaj sayısı geride değilse)"""
+    if not s["kisiler"]:
+        return False
+    eski = {}
+    for a in havuz.values():
+        for k in a["kaynaklar"]:
+            if k["tip"] in ("wa-grup", "wa-birebir") and k.get("sohbet") == s["sohbet"]:
+                eski[sade(a["ad"])] = k
+    if not eski:
+        return False
+    for kad, v in s["kisiler"].items():
+        k = eski.get(sade(kad))
+        if not k or k.get("son", "") < v["son"].isoformat() or k.get("mesaj", 0) < v["mesaj"]:
+            return False
+    return True
+
+
 def _oneri(a):
     birebir = [k for k in a["kaynaklar"] if k["tip"] == "wa-birebir"]
     toplam = sum(k["mesaj"] + k.get("ben_mesaj", 0) for k in birebir)
@@ -277,17 +313,26 @@ def ice_aktar(dosya_adi, ham, mevcut_kisiler, sakla=None):
     havuz = adaylar()
     ben_adlari = ben_adlari_al()
     bugun = date.today().isoformat()
-    ozet = {"dosya": dosya_adi, "yeni": 0, "guncellenen": 0, "sohbetler": [], "uyari": ""}
+    ozet = {"dosya": dosya_adi, "yeni": 0, "guncellenen": 0, "sohbetler": [], "uyari": "",
+            "agda_guncellenecek": [], "degismeyen": [], "agda_olan": []}
 
     def birlestir(ad, telefonlar, kaynak, ek):
         aid = _bul(havuz, ad, telefonlar)
-        if aid is None:
+        yeni_aday = aid is None
+        if yeni_aday:
             aid = _aday_id(ad, telefonlar)
             havuz[aid] = {"id": aid, "ad": ad, "telefon": [], "kaynaklar": [], "durum": "yeni", "diger_adlar": []}
             ozet["yeni"] += 1
-        else:
-            ozet["guncellenen"] += 1
         a = havuz[aid]
+        eski = next((k for k in a["kaynaklar"] if k["tip"] == kaynak["tip"] and k.get("sohbet") == kaynak.get("sohbet")), None)
+        if a.get("durum") == "eklendi" and eski and eski.get("son", "") >= kaynak.get("son", "") and eski.get("mesaj", 0) >= kaynak.get("mesaj", 0):
+            return   # bu kişi için bu sohbette yeni bir şey yok; ağdaki hâli ve kaydı olduğu gibi kalır
+        if a.get("durum") == "eklendi":
+            # ağdaki kişiye yeni bilgi: listeye "ağda var (güncellenir)" diye geri döner, onaylanınca kişi dosyası güncellenir
+            a["durum"] = "yeni"
+            ozet["agda_guncellenecek"].append(a["ad"])
+        elif a.get("durum") == "yeni" and not yeni_aday:
+            ozet["guncellenen"] += 1
         if ad and sade(ad) != sade(a["ad"]) and ad not in a["diger_adlar"]:
             if re.fullmatch(r"[+\d\s()-]{7,}", a["ad"]):
                 a["diger_adlar"].append(a["ad"]); a["ad"] = ad
@@ -311,6 +356,14 @@ def ice_aktar(dosya_adi, ham, mevcut_kisiler, sakla=None):
     else:
         for ad, metin in _txt_metinleri(dosya_adi, ham):
             s = whatsapp_coz(metin, ad, ben_adlari)
+            if _zaten_var(havuz, s):
+                # aynı dışa aktarma (ya da daha eskisi) yeniden bırakıldı: hiçbir şey yazılmaz, eldeki daha yeni kayıt korunur
+                agda = sorted({a["ad"] for a in havuz.values() if a.get("durum") == "eklendi" and a.get("kisi")
+                               and any(k.get("sohbet") == s["sohbet"] for k in a["kaynaklar"])})
+                ozet["degismeyen"].append(s["sohbet"])
+                ozet["agda_olan"] += [x for x in agda if x not in ozet["agda_olan"]]
+                ozet["sohbetler"].append(f"{'grup' if s['grup'] else 'birebir'}: {s['sohbet']} · zaten içe aktarılmış, yeni mesaj yok")
+                continue
             ham_yol = ""
             if sakla:
                 os.makedirs(sakla, exist_ok=True)
@@ -321,6 +374,8 @@ def ice_aktar(dosya_adi, ham, mevcut_kisiler, sakla=None):
                 ozet["uyari"] = (f"Sohbette senin adın ({', '.join(ben_adlari)}) bulunamadı; kendi adın aday olarak görünebilir. "
                                  "'WhatsApp'taki adım' alanına sohbette görünen adını yaz.")
             for kad, v in s["kisiler"].items():
+                if kad in BOTLAR:   # WhatsApp'ın kendi yapay zekâ hesabı kişi değildir
+                    continue
                 tel = [kad] if re.fullmatch(r"[+\d\s()-]{7,}", kad) else []
                 kaynak = {"tip": "wa-grup" if s["grup"] else "wa-birebir", "sohbet": s["sohbet"], "mesaj": v["mesaj"],
                           "ilk": v["ilk"].isoformat(), "son": v["son"].isoformat(), "tarih": bugun}
@@ -331,8 +386,9 @@ def ice_aktar(dosya_adi, ham, mevcut_kisiler, sakla=None):
                 if ham_yol:
                     kaynak["ham"] = os.path.basename(ham_yol)
                 birlestir(kad, tel, kaynak, {})
-            ozet["sohbetler"].append(f"{'grup' if s['grup'] else 'birebir'}: {s['sohbet']} ({len(s['kisiler'])} kişi)")
+            ozet["sohbetler"].append(f"{'grup' if s['grup'] else 'birebir'}: {s['sohbet']} ({len(set(s['kisiler']) - BOTLAR)} kişi)")
 
+    ozet["agda_guncellenecek"] = sorted(set(ozet["agda_guncellenecek"]))
     # aynı adlı, numaraları çelişmeyen adayları birleştir (ör. önce numarayla, sonra adla gelen kişi)
     for aid in list(havuz):
         a = havuz.get(aid)
@@ -361,6 +417,9 @@ def ice_aktar(dosya_adi, ham, mevcut_kisiler, sakla=None):
         if a.get("durum") != "yeni":
             continue
         a["eslesen"], a["eslesen_oneri"] = "", []
+        if a.get("kisi") and any(k["id"] == a["kisi"] for k in mevcut_kisiler):   # daha önce eklenmiş: aynı kişiye bağlı kalsın
+            a["eslesen"] = a["kisi"]
+            continue
         tl = {tel_sade(x) for x in a["telefon"]}
         for k in mevcut_kisiler:
             if sade(k["ad"]) == sade(a["ad"]) or tl & {tel_sade(x) for x in k.get("telefon", [])}:

@@ -5,6 +5,7 @@ Kod (bu klasör) ile veri ayrıdır: varsayılan veri klasörü <kod>/veri, baş
 ag_uret.py (statik görünüm) ve ag_sunucu.py (kut.pyw ile açılan, düzenlenebilir yerel sunucu) bunu kullanır.
 """
 import base64
+import contextlib
 import json
 import math
 import os
@@ -23,7 +24,7 @@ DEPO = os.path.dirname(KOK)   # depo kökü (kaynaktan çalışırken): kut/ bir
 
 
 def varsayilan_veri():
-    """Kaynaktan çalışınca <depo>/veri; .exe'de geçici klasör değil, Belgelerim\Kut (--veri verilmişse onu, boşuna kurmaz)."""
+    """Kaynaktan çalışınca <depo>/veri; .exe'de geçici klasör değil, Belgelerim/Kut (--veri verilmişse onu, boşuna kurmaz)."""
     if not DONDURULDU:
         return os.path.join(DEPO, "veri")
     if "--veri" in sys.argv[:-1]:
@@ -268,6 +269,12 @@ def kisi_oku(yol):
 
 TURETILEN = ("kind", "title", "facts")
 FACTS_ALANLARI = ("kurum", "rol", "son_temas")
+HAYIR = ("false", "hayir", "no", "0", "off")
+
+
+def uzak_kapali_mi(alanlar):
+    """Kişi kartındaki '🔒 Bu kişi yapay zekâya gönderilmez' (remote_allowed: false)."""
+    return str(alanlar.get("remote_allowed", "")).strip().lower() in HAYIR
 
 
 def _temiz(v):
@@ -277,7 +284,11 @@ def _temiz(v):
 def kisi_yaz(kid, alanlar, govde):
     # Beyin kişi notu biçimi (beyin entegrasyonu): kind/title/facts ikinci beynin araması içindir, Kut alanlarından türetilir.
     satirlar = ["kind: person", f"title: {_temiz(alanlar.get('ad'))}".rstrip()]
-    anahtarlar = ALAN_SIRASI + [k for k in alanlar if k not in ALAN_SIRASI and k not in ("govde", "id") + TURETILEN]
+    # Yapay zekâya kapalı kişi ikinci beynin otomatik bağlamına da girmez: beyin yalnız `visibility: private`'ı tanır, remote_allowed'ı değil.
+    gorunurluk = "private" if uzak_kapali_mi(alanlar) else _temiz(alanlar.get("visibility"))
+    if gorunurluk:
+        satirlar.append(f"visibility: {gorunurluk}")
+    anahtarlar = ALAN_SIRASI + [k for k in alanlar if k not in ALAN_SIRASI and k not in ("govde", "id", "visibility") + TURETILEN]
     for k in anahtarlar:
         if k not in alanlar and k not in ("ad", "tur", "yakinlik"):
             continue
@@ -536,10 +547,173 @@ def surum_al(kid, sakla=20):
     os.makedirs(hedef, exist_ok=True)
     kopya = os.path.join(hedef, f"{kid}-{datetime.now():%Y%m%d-%H%M%S-%f}.md")
     shutil.copyfile(yol, kopya)
+    _ozel_yap(kopya)
     eskiler = sorted(f for f in os.listdir(hedef) if re.fullmatch(rf"{re.escape(kid)}-\d{{8}}-\d{{6}}-\d+\.md", f))
     for f in eskiler[:-sakla]:
         os.remove(os.path.join(hedef, f))
     return kopya
+
+
+# ---- Arşiv bakımı: Kut'un kendi tuttuğu kopyalar süreyle silinir ve ikinci beynin aramasına girmez ----
+ARSIV_GUN = 90   # eski kişi sürümleri, çıkarılan kişiler, doğrulama öncesi yedekler, arşivlenmiş ham sohbetler
+HAM_GUN = 30     # gelen/whatsapp: analiz bitince hemen silinir; analiz edilmemiş olanlar bu kadar gün sonra
+ARSIV_SURELI = ("surum", "cikarilan", "gelen")   # + "yedek-dogrulama-oncesi-*" klasörleri. haric/, hedefler/ kullanıcının kararıdır, dokunulmaz
+
+
+def _ozel_yap(yol):
+    """Arşivdeki .md kopyasına `visibility: private` ekler: eski sürümler ikinci beynin otomatik bağlamına girmez.
+    Atomik yazar (geçici dosya + os.replace) ve dosyanın değişme zamanını korur (süre sayacı sıfırlanmaz)."""
+    try:
+        with open(yol, encoding="utf-8-sig") as f:   # BOM'lu dosya da tanınır; BOM yazılmaz
+            metin = f.read()
+        st = os.stat(yol)
+    except (OSError, UnicodeDecodeError):
+        return False
+    m = re.match(r"---[ \t]*\n(.*?)\n---[ \t]*(?:\n|\Z)", metin, re.S)
+    if m and re.search(r"(?m)^visibility:\s*private\s*$", m.group(1)):
+        return False
+    if m:
+        ust = re.sub(r"(?m)^visibility:.*\n?", "", m.group(1)).rstrip("\n")
+        metin = "---\n" + (ust + "\n" if ust else "") + "visibility: private\n---\n" + metin[m.end():]
+    elif metin.startswith("---\n"):   # kapanışı olmayan bozuk frontmatter: alanları gövdeye itmemek için dokunma
+        return False
+    else:
+        metin = "---\nvisibility: private\n---\n" + metin
+    gecici = yol + ".ozel-yaz"
+    try:
+        with open(gecici, "w", encoding="utf-8", newline="\n") as f:
+            f.write(metin)
+        os.utime(gecici, ns=(st.st_atime_ns, st.st_mtime_ns))
+        os.replace(gecici, yol)
+    except OSError:
+        with contextlib.suppress(OSError):
+            os.remove(gecici)
+        return False
+    return True
+
+
+def _ad_tarihi(ad):
+    """Arşiv dosya adındaki tarih (surum: <id>-YYYYMMDD-HHMMSS-..., cikarilan: <id>-YYYYMMDD.md); yoksa None."""
+    m = re.search(r"-(\d{8})(?:-\d{6}(?:-\d+)?)?\.[a-z0-9]+$", ad, re.I)
+    if not m:
+        return None
+    try:
+        return datetime.strptime(m.group(1), "%Y%m%d").timestamp()
+    except ValueError:
+        return None
+
+
+def _eski_mi(yol, gun, simdi):
+    """Yaş, dosya adındaki tarih ile değişme zamanından YENİ olanına göre: taşıma mtime'ı korusa da arşive giriş anı sayılır."""
+    try:
+        t = os.path.getmtime(yol)
+    except OSError:
+        return False
+    ad_t = _ad_tarihi(os.path.basename(yol))
+    return simdi - max(t, ad_t or 0) > gun * 86400
+
+
+def _arsiv_ici(yol, kok_gercek):
+    """Bağlantı (sembolik bağ/junction) değil ve gerçekten arşivin içinde mi? Dışarıdaki dosyalar asla silinmez."""
+    if _bag_mi(yol):
+        return False
+    return os.path.normcase(os.path.realpath(yol)).startswith(kok_gercek + os.sep)
+
+
+def ham_sil(yol):
+    """Analizi biten ham sohbet metnini siler (türetilen kişi, bağ ve temas bilgisi kişi dosyalarında kalır)."""
+    try:
+        os.remove(yol)
+        return True
+    except OSError:
+        return False
+
+
+def arsiv_bakimi(simdi=None):
+    """Açılışta çalışır: süresi dolan arşiv kopyalarını ve ham sohbetleri siler, kalan arşiv .md'lerini private yapar. Sayıları döndürür."""
+    import time
+    simdi = simdi or time.time()
+    say = {"silinen": 0, "ham": 0, "ozel": 0}
+    wa = os.path.join(VERI, "gelen", "whatsapp")
+    if os.path.isdir(wa):
+        for f in os.listdir(wa):
+            yol = os.path.join(wa, f)
+            if os.path.isfile(yol) and _eski_mi(yol, HAM_GUN, simdi) and ham_sil(yol):
+                say["ham"] += 1
+    if not os.path.isdir(ARSIV) or os.path.islink(ARSIV):
+        return say
+    kok_g = os.path.normcase(os.path.realpath(ARSIV))
+
+    def gez(kok):   # bağlantıları izlemeden, yalnız arşivin içindeki gerçek dosyalar
+        for dizin, alt, dosyalar in os.walk(kok, followlinks=False):
+            alt[:] = [d for d in alt if _guvenli(lambda: _arsiv_ici(os.path.join(dizin, d), kok_g))]
+            for f in dosyalar:
+                yol = os.path.join(dizin, f)
+                if _guvenli(lambda: _arsiv_ici(yol, kok_g)):
+                    yield yol
+
+    for ad in os.listdir(ARSIV):
+        kok = os.path.join(ARSIV, ad)
+        if not os.path.isdir(kok) or not _guvenli(lambda: _arsiv_ici(kok, kok_g)):
+            continue
+        m = re.fullmatch(r"yedek-dogrulama-oncesi-(\d{8})-\d{6}", ad)
+        if m:
+            try:
+                yas = (datetime.fromtimestamp(simdi) - datetime.strptime(m.group(1), "%Y%m%d")).days
+            except ValueError:   # bozuk tarihli klasör bakımı yarıda kesmez; dokunulmaz
+                continue
+            if yas > ARSIV_GUN:
+                for yol in list(gez(kok)):
+                    with contextlib.suppress(OSError):
+                        _sil(yol)
+                _bos_dizinleri_sil(kok)
+                say["silinen"] += 1
+        elif ad in ARSIV_SURELI:
+            for yol in list(gez(kok)):
+                if _eski_mi(yol, ARSIV_GUN, simdi):
+                    with contextlib.suppress(OSError):
+                        _sil(yol)
+                        say["silinen"] += 1
+    for yol in list(gez(ARSIV)):
+        if yol.endswith(".md") and _ozel_yap(yol):
+            say["ozel"] += 1
+    return say
+
+
+def _bag_mi(yol):
+    return os.path.islink(yol) or bool(getattr(os.stat(yol, follow_symlinks=False), "st_file_attributes", 0) & 0x400)   # 0x400 = junction/reparse point
+
+
+def _bos_dizinleri_sil(kok):
+    """Boş dizinleri alttan üste ve bağlantı girişlerini (hedeflerine HİÇ inmeden) kaldırır; rmtree/os.walk junction'ı izleyebilir, kullanılmaz."""
+    with contextlib.suppress(OSError):
+        for e in list(os.scandir(kok)):
+            with contextlib.suppress(OSError):
+                if _bag_mi(e.path):
+                    try:
+                        os.unlink(e.path)
+                    except OSError:
+                        os.rmdir(e.path)   # Windows junction: rmdir bağı kaldırır, hedefe dokunmaz
+                elif e.is_dir(follow_symlinks=False):
+                    _bos_dizinleri_sil(e.path)
+        os.rmdir(kok)   # yalnız boşsa
+
+
+def _sil(yol):
+    """Arşiv dosyasını siler; salt-okunur öznitelikliyse yazılabilir yapıp yeniden dener."""
+    try:
+        os.remove(yol)
+    except PermissionError:
+        import stat
+        os.chmod(yol, stat.S_IWRITE)
+        os.remove(yol)
+
+
+def _guvenli(f):
+    try:
+        return f()
+    except OSError:
+        return False
 
 
 def kisi_guncelle(kid, alanlar=None, degerlendirme=None, kaynak_adi=None):
@@ -647,7 +821,7 @@ def bu_hafta(kisiler, bugun=None):
         if esik and son:
             g = (bugun - son).days
             if g >= esik:
-                liste.append({"id": k["id"], "neden": f"{g} gündür temas yok", "oncelik": 30 - g + esik})
+                liste.append({"id": k["id"], "neden": f"{g} gündür temas yok", "oncelik": 30 - g + esik, "ihmal": True})
     return sorted(liste, key=lambda x: x["oncelik"])[:12]
 
 
@@ -892,7 +1066,7 @@ def veri_hazirla(uyarilar=None, foto_gom=True):
     import ag_soz   # geç içe aktarma (ag_soz bu modülü kullanır)
     ag_soz.ozet_ekle(kisiler)
     for k in kisiler:
-        k["uzak_kapali"] = "haric" if k["haric"] else "kapali" if str(k.get("remote_allowed", "")).strip().lower() in ("false", "hayir", "no", "0", "off") else ""
+        k["uzak_kapali"] = "haric" if k["haric"] else "kapali" if uzak_kapali_mi(k) else ""
         k["bekleyen"] = sum(1 for r in bekleyen if r["kisi"] == k["id"])
         k["belgeler"] = belgeler(k["id"])
         e = etkin_son_temas(k)
@@ -909,10 +1083,26 @@ def veri_hazirla(uyarilar=None, foto_gom=True):
         "ozellik_tanim": OZELLIKLER, "puan_tanim": ILISKI_PUANLARI, "ozellik_olcut": OLCUTLER, "olcut_kurallari": OLCUT_KURALLARI,
         "yakinlik_olcut": YAKINLIK_OLCUT,
         "ben": {k: merkez.get(k, "") for k in BEN_ALANLARI},
-        "dikkatler": dikkatler(kisiler, iliskiler), "bu_hafta": bu_hafta(kisiler),
+        "dikkatler": dikkatler(kisiler, iliskiler), "bu_hafta": _dinlenenleri_cikar(bu_hafta(kisiler)),
         "cikarimlar": bekleyen, "cikarim_turleri": CIKARIM_TURLERI, "siklik": {a: v[1] for a, v in SIKLIK.items()},
         "uretildi": date.today().isoformat(), "uyarilar": uyarilar,
     }
+
+
+def _dinlenenleri_cikar(liste):
+    """"Bu hafta"daki ihmal satırlarından, kullanıcının "Uymuyor/Atla/Ertele" kararıyla dinlendirdiği kişileri çıkarır (ag_sonuc.ayar).
+    Kullanıcının kendi koyduğu sonraki adım ve sözler kalır: onlar Kut'un önerisi değil, kullanıcının kaydıdır."""
+    if not any(x.get("ihmal") for x in liste):
+        return liste
+    try:
+        import ag_sonuc   # geç içe aktarma: ag_sonuc bu modülü kullanır
+        kayitlar = ag_sonuc.oku()
+        if not kayitlar:
+            return liste
+        dinlenen = {x["id"] for x in liste if x.get("ihmal") and ag_sonuc.ayar(x["id"], kayitlar=kayitlar)["bekle_gun"] > 0}
+    except Exception:   # sonuç defteri okunamazsa liste olduğu gibi kalır
+        return liste
+    return [x for x in liste if not (x.get("ihmal") and x["id"] in dinlenen)]
 
 
 def _js_json(x):
@@ -928,5 +1118,5 @@ def sayfa(veri, mod=None, kilit=None):
     return re.sub(r"/\*(VERI|MOD|KILIT)\*/null", lambda m: deger[m.group(1)], html)
 
 
-if not globals().get("DEMO_KAPSULU"):   # demo kapsülü (ag_demo.py) gerçek veri klasörünü iskeletlemez; yolunu kendisi verir
-    veri_klasoru(os.environ.get("AGIM_VERI") or varsayilan_veri())
+if not globals().get("DEMO_KAPSULU") and not os.environ.get("KUT_ISKELETSIZ"):   # demo kapsülü (ag_demo.py) gerçek veri klasörünü iskeletlemez; yolunu kendisi verir
+    veri_klasoru(os.environ.get("AGIM_VERI") or varsayilan_veri())   # KUT_ISKELETSIZ: zamanlanmış özet, taşınmış --veri klasörünü yeniden yaratmasın (ag_giris.py)

@@ -452,6 +452,28 @@ def soz_onayla(g):
                 "veri": ev.c.veri_hazirla()}
 
 
+def ornek_sonuclar(bugun=None):
+    """Brifingin "Kut'un geçmiş önerileri" bölümünü gösteren kurgusal iki kayıt (yalnız bellekte; hiçbir dosyaya yazılmaz)."""
+    return [{"no": 1, "tarih": _gun(41, bugun).isoformat(), "kaynak": "ozet", "kisi": SELIN, "oneri": "Staj başvurusu için kısa bir teşekkür mesajı yaz",
+             "sonuc": "ise_yaradi", "not": "Hemen yanıt verdi", "kapanis": _gun(39, bugun).isoformat()},
+            {"no": 2, "tarih": _gun(12, bugun).isoformat(), "kaynak": "ozet", "kisi": SELIN, "oneri": "Açık veri çağrısını haber ver",
+             "sonuc": "ertelendi", "not": "", "kapanis": _gun(10, bugun).isoformat()}]
+
+
+def ornek(bugun=None):
+    """Tanıştırma yolu ve brifing için demo girdileri: kapsüldeki kurgusal veri sözlüğü, hedefler, strateji okuması, geçmiş kayıtlar.
+    Gerçek veri klasöründen, ayarlardan ya da sonuç defterinden hiçbir şey okunmaz; hiçbir şey yazılmaz."""
+    with _kilit:
+        d = _taze()
+        if d is None:
+            raise ValueError("demo etkin değil")
+        ev = kapsul()
+        ev.c.veri_klasoru(d["dizin"])
+        veri = ev.c.veri_hazirla(foto_gom=False)
+    p = pusula_verisi(bugun)
+    return {"veri": veri, "hedefler": p["hedefler"], "strateji": p["strateji"], "sonuclar": ornek_sonuclar(bugun)}
+
+
 def isinma(_=None):
     """Zaman birkaç gün ileri: Selin Hoca ile temas işlenir, söz tamamlanır, yakınlık 1 → 2. Yalnız DEMO klasörüne yazar."""
     with _kilit:

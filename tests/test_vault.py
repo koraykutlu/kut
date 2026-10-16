@@ -46,7 +46,7 @@ class VaultTest(unittest.TestCase):
         c.veri_klasoru(os.path.join(self.kok, "notes", "ag"))
         c.ben_yaz({"ad": "Kerem"})
         c.kisi_yaz("ayla-ornek", {"ad": "Ayla Örnek", "tur": "yakin"}, "# Ayla Örnek\n")
-        c.kisi_yaz("eylul-sezer", {"ad": "Eylül Sezer", "tur": "cevre"}, "# Eylül Sezer\n")
+        c.kisi_yaz("ayla-kurgu", {"ad": "Ayla Kurgu", "tur": "cevre"}, "# Ayla Kurgu\n")
         yaz(os.path.join(self.kok, "tasks", "a.md"), gorev("active", "Hackathon başvurusu", "Ayla Örnek ile XYZ×Acme formu."))
         yaz(os.path.join(self.kok, "tasks", "b.md"), gorev("done", "Bitti", "Ayla ile bitti."))
         yaz(os.path.join(self.kok, "tasks", "c.md"), gorev("inbox", "Yedek şifresi"))
@@ -104,7 +104,7 @@ class VaultTest(unittest.TestCase):
     def test_ilk_ad_ay_adiyla_karismaz(self):
         self.ayarla()
         yaz(os.path.join(self.kok, "tasks", "d.md"), gorev("active", "Takvim", "25 Eylül 2026'da başladı."))
-        self.assertEqual(v.kisi_anilma("eylul-sezer"), [])
+        self.assertEqual(v.kisi_anilma("ayla-kurgu"), [])
 
     def test_sohbet_blogu_kaynakli(self):
         self.ayarla()

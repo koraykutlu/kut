@@ -630,7 +630,7 @@ def doldur(kilit, yenile_cb, zorla=False):
 
 
 def _ad_uyumlu(a, b):
-    """Biri diğerinin ad kelimelerinin alt kümesiyse uyumlu ('Eylül Sezer' ⊂ 'Eylül Damla Gönül Sezer')."""
+    """Biri diğerinin ad kelimelerinin alt kümesiyse uyumlu ('Ayla Kurgu' ⊂ 'Ayla Nur Deniz Kurgu')."""
     p, q = set(c.sade(a).split()), set(c.sade(b).split())
     return not p or not q or p <= q or q <= p
 

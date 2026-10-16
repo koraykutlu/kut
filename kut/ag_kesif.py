@@ -564,8 +564,16 @@ def yenile(zorla=False, bitince=None):
                     notlar.append("vekil verisi güncellendi")
             except Exception as e:
                 notlar.append(f"vekil verisi indirilemedi ({type(e).__name__}); eldeki veri kullanılıyor")
-            _durum["mesaj"] = "vekil dizini hazırlanıyor…"
-            _vekil_kayitlari()
+            if vekilpedia_acik() and os.path.exists(os.path.join(vekil_klasoru(), "milletvekilleri.csv")):
+                _durum["mesaj"] = "vekil dizini hazırlanıyor…"
+                try:
+                    _vekil_kayitlari()
+                except Exception as e:
+                    notlar.append(f"vekil dizini hazırlanamadı ({type(e).__name__})")
+            elif not vekilpedia_acik():
+                notlar.append("vekil verisi kapalı (Ayarlar → Kaynaklar)")
+            else:
+                notlar.append("vekil verisi yok")
             if etkinlik_acik():
                 v = etkinlikleri_cek(zorla)
                 notlar.append(f"{len(v['etkinlikler'])} yaklaşan etkinlik")

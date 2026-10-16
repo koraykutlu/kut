@@ -12,7 +12,10 @@ Tanıtım sayfası: **[koraykutlu.github.io/kut](https://koraykutlu.github.io/ku
 > standard-library HTTP server bound to `127.0.0.1` plus a single-page HTML UI; no accounts, no cloud, no dependencies. Your data lives as
 > plain Markdown files and never enters this repository. v1.1 adds a first-run setup wizard with a guided tour, calendar (.ics) and
 > LinkedIn (CSV) import, a Settings window for optional sources, a choice of AI provider (Claude Code, Codex, Gemini or local Ollama;
-> no API keys stored) and a built-in fictional demo story ("Deniz'in salısı") that never touches your data. The AI assistant is optional:
+> no API keys stored) and a built-in fictional demo story ("Deniz'in salısı") that never touches your data. v1.2 adds introduction paths
+> ("who can introduce me to X?"), a one-page pre-meeting brief, a weekly digest with an outcome loop (did it work? / doesn't fit, and why),
+> optional OS notifications (off by default, no names), stronger local privacy (archive retention, private-by-default derived files) and a
+> sky that follows your computer's clock. All of these run locally and deterministically, with no model call. The AI assistant is optional:
 > every record passes a local privacy gate first (see [Gizlilik](#gizlilik)). The interface is in Turkish. Try it without any personal data:
 > the "Önce bir örnekle göster" button in the first-run wizard, or `py -3 demo/demo_veri.py --hedef demo-veri` then
 > `py -3 kut.pyw --veri demo-veri` ([Demo verisiyle deneme](#demo-verisiyle-deneme)). Licence: MIT.*
@@ -29,6 +32,9 @@ Bu README'deki tüm ekran görüntüleri ve GIF (v1.1 arayüzü), `demo/demo_ver
 Merkezde sen, çevrende tanıdıkların. Renk kişinin türünü (akademi, iş, yakın, çevre, etkinlik, finans, siyaset), halka yakınlığı gösterir;
 bağlar arkadaşlık, mentorluk, yöneticilik, iş ortaklığı, akrabalık, rekabet ya da gerginlik gibi tiplerle çizilir.
 Sol menüdeki **Dikkat** listesi bağlardan olası çıkar çatışmalarını işaretler (ör. rakip firmadaki bir tanıdık, gergin bir üçgen).
+Ağın büyüyünce (48+ kişi) harita kendini düzenler: yakınlık eş merkezli halkalar (güçlü içte), tür açısal dilimler ("Akademi · 42"), yerler her açılışta aynıdır; adlar yakınlaştıkça belirir ve çakışmaz,
+kişi–kişi bağları soluktur ve bir kişinin üstüne gelince ya da onu seçince onun komşulukları öne çıkar. Sürüklediğin kişi yerinde kalır; ↺ düğmesi hepsini yerine döndürür. Dilime tıklayınca oraya yaklaşır.
+Az kişili ağda (47'ye kadar) eski sıcak, kuvvet tabanlı görünüm sürer. Kalabalık ağı denemek için `py -3 demo/kalabalik_veri.py --kisi 400 --hedef KLASÖR` (kurgusal adlar).
 
 ![Ağ haritası](docs/img/harita.png)
 
@@ -59,6 +65,21 @@ yani uzak modele yalnız kapıdan geçerek gider; kişi **🔒 Bu kişi yapay ze
 Tarihi gelen sonraki adımlar, ihmal edilenler ve gecikmiş/yaklaşan sözler tek listede; bir tıkla haritada yalnız onlar öne çıkar. Hariç listesindeki kişiler hiçbir öneriye girmez.
 
 ![Bu hafta görünümü](docs/img/bu-hafta.png)
+
+### Nasıl ulaşırım? Tanıştırma yolu
+Birine ulaşmak istediğinde (bir hoca, bir şirketteki biri, bir alandaki herhangi biri) kişi kartındaki **↗ Nasıl ulaşırım?** düğmesi ağındaki en sıcak yolu bulur: kim kimi tanıyor, ilk adımı kim atar, ne yazacaksın.
+Sağ panelde zincir (Sen → Baran → Selin Hoca), her bağın gücü, gerekçe ("Baran ile yakınsın; son temas 3 gün önce"), dikkat edilecekler ("Baran ile 90 gündür konuşmadın; tanıştırma istemeden önce bağı ısıt") ve kopyalanabilir bir mesaj taslağı görünür; haritada yol öne çıkar, kalanı soluklaşır.
+*Amaç* alanı taslağı yeniden yazar, *Bu adımı takip et* öneriyi **Pusula → Sonuçlar**'a kaydeder. Kişi adı yerine kurum ya da alanla da arayabilirsin (**Pusula → Ulaş**: «Şişecam», «finans»). Hesap tamamen yereldir; hariç listendeki kişiler yola hiç girmez.
+
+### Görüşme brifingi
+Birini aramadan ya da buluşmadan önce kartındaki **Brifing** tek sayfa hazırlar: seninle ilişkisi, son konuşmalar, açık sözlerin (gecikmiş olan başta), sonraki adım, ortak tanıdıklar, görüşmede açabileceğin konular ve Kut'un bu kişi için daha önce önerdikleri. Markdown olarak kopyalanır ya da yalnız brifing yazdırılır.
+
+### Kut sana gelir: haftalık özet ve "Nasıl geçti?"
+Kut her hafta ilk açıldığında, söyleyecek bir şeyi varsa, bir özet gösterir: bu hafta ilgilenmen gereken en çok üç kişi (neden, tek somut adım, yazmaya hazır taslak) ve söz verdiklerin. *Yaptım / Ertele / Atla* der, birkaç gün sonra *işe yaradı mı?* diye sorar; kararına göre öneriler ayarlanır (iki kez atladığın kişiyi dört hafta rahat bırakır, iki kez işe yaramayan yolun yerine başka bir yol ister). *Temas olarak kaydet* kutusu kişinin temas geçmişine satır ekler.
+Özete sol paneldeki **Bu hafta → Haftanın özeti**'nden her zaman dönebilirsin. Kayıtlar `veri/sonuclar.md` (okunur tablo, elle de düzenlenir) ve `veri/ozet/` altındadır; son 8 haftanın sayıları Pusula → Sonuçlar'da.
+
+### Kut kapalıyken de haber verir (isteğe bağlı)
+⚙ Ayarlar → **Kut sana gelsin** açılırsa bilgisayarında zamanlanmış bir görev kurulur (Windows Görev Zamanlayıcı, macOS launchd, Linux systemd) ve haftada bir (ya da her sabah, yalnız o gün bir şey varsa) sistem bildirimi gösterir. **Varsayılan kapalıdır**, kapatınca görev kaldırılır. Bildirim yalnız sayı taşır («Bu hafta 3 kişi ve 1 söz seni bekliyor»); adlar için ayrı bir anahtar vardır ve uyarısı okunmalıdır: adlar kilit ekranında ve bildirim merkezinde görünebilir, Kut'un PIN kilidini aşar. Not, söz ya da taslak metni bildirime hiç girmez. Bu özellikler ağa çıkmaz.
 
 ### Çıkarım onay kuyruğu ("Asistan soruyor")
 Asistanın (yapay zekâ) kişiler hakkındaki çıkarımları (ilişki özeti, etiket, puan, bağ, kurum/rol, sorular) **sen onaylamadıkça kişi dosyasına yazılmaz**.
@@ -318,6 +339,7 @@ Demoda çevrimdışı kalmak ve model çağrısını kapatmak istersen, `kut-dem
 - **Pusula (P):** hedefler `veri/hedefler/<id>.md`; keşif `ag_kesif.py` (vekil verisi (açıksa) haftada bir, etkinlikler 12 saatte bir; kaynak listesi
   `ayarlar.json` → `kesif.etkinlik_kaynaklari`); strateji `ag_strateji.py` (`veri/strateji/<tarih>.md`, hamleleri *yaptım / işe yaradı* diye işaretlersin,
   sonraki okuma bunu görür). Aktif hedef ve Claude Code varsa haftada bir kendiliğinden çalışır (`"otomatik_strateji": false` ile kapanır).
+  **Takvim sekmesi** (`ag_ajanda.py`, `GET /api/ajanda?bas=&bit=`): hamle ve hedef son tarihleri, sözler, kişilerin sonraki adımı ve ihmal eşiği, "katılacağım" dediğin etkinlikler ve geçmiş temaslar ay ızgarasında, hafta görünümünde ya da ajanda listesinde (←/→ ay, T bugün). Yerel ve salt okurdur; model ve ağ yok, hariç listesindeki kişi görünmez. Günü seçince hamlenin ilk adımı, kişinin sonraki adımı ya da etkinliğin adresi yan panelde açılır.
 - **Ses:** Kut'a sor çubuğunda 🎙 (Ctrl+Boşluk) konuşmayı yazıya çevirir, "🔈 Sesli cevap" cevapları okur. Modeller Kut'un Python'unda değil, kurulu oldukları
   ortamlarda çalışır (`ag_ses.py` → `ag_ses_isci.py`). Ortam şu sırayla aranır: (1) `ayarlar.json` → `"ses": {"oku_python": "<ema ortamı>\\Scripts\\python.exe",
   "yaz_python": "<faster-whisper ortamı>\\Scripts\\python.exe", "yaz_model": "large-v3"}` ile verilen açık yol; (2) Kut'un kendi kurduğu ortam
@@ -405,7 +427,7 @@ Profilinde `okul` boşsa ya da tanımsızsa bu özellik kapalıdır ve hiçbir o
 ## Depo düzeni
 
 ```
-kut.pyw        başlatıcı (kut/ klasörünü yola ekler, sunucuyu açar)
+kut.pyw        başlatıcı (kut/ klasörünü yola ekler, sunucuyu açar; `--ozet` zamanlanmış özet görevidir, sunucu açmaz)
 kut/           uygulama kodu (ag_*.py), sürüm (surum.py), güncelleme (ag_guncelle.py), veri göçleri (goc.py), arayüz (ag_sablon.html), simge
 tests/         birim testleri
 demo/          kurgusal demo verisi üreticisi (demo_veri.py) ve içe aktarma örnek dosyaları (ornek/)

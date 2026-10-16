@@ -503,7 +503,7 @@ class ArayuzTest(unittest.TestCase):
         self.assertLess(api.index("if (DEMO) return demoApi(yol, govde);"), api.index("fetch("))   # fetch'ten önce yönlenir
         b = self.bolum()
         izinli = re.findall(r'y === "(/api/[^"]+)"', b)
-        self.assertEqual(sorted(izinli), ["/api/arayuz/ses", "/api/pusula", "/api/sor", "/api/soz/onayla"])
+        self.assertEqual(sorted(izinli), ["/api/arayuz/ses", "/api/brifing", "/api/pusula", "/api/sor", "/api/soz/onayla", "/api/yol"])   # yol ve brifing saf hesaplamadır: demo kapsülündeki kurgusal veriyle çalışır
         self.assertIn('throw new Error("Bu işlem örnekte kapalı', b)
         # demo bölümündeki ham fetch'ler yalnız demo uçlarına gider
         for m in re.finditer(r'fetch\(([^,)]+)', b):

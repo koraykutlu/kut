@@ -323,6 +323,11 @@ class ModelTest(unittest.TestCase):
             self.assertEqual(mdl.ayarla({"saglayici": "codex", "modeller": {"codex": "m"}})["secili"], "codex")   # aynı seçim: model adı onaysız değişir
             self.assertIn("Claude Code", mdl.ARAC_UYARISI)
             self.assertIn("Ollama", mdl.ARAC_UYARISI)
+            u = {p["id"]: p["uyari"] for p in mdl.durum()["saglayicilar"]}
+            self.assertIn("Codex", u["codex"]); self.assertNotIn("Gemini", u["codex"])   # her sağlayıcı yalnız kendi notunu taşır
+            self.assertIn("Gemini", u["gemini"]); self.assertNotIn("Codex", u["gemini"])
+            self.assertNotIn("{not}", u["codex"] + u["gemini"])
+            self.assertEqual(u["claude"], ""); self.assertEqual(u["ollama"], "")
 
     # ---- O1: konuşma geçmişi ----
     def test_gecmis_saglayici_degisince_ve_kilitlenince_silinir(self):

@@ -102,7 +102,7 @@ class BaglamTest(unittest.TestCase):
         self.assertEqual(k.kart_esle(kayit["kartlar"][3], kisiler)["id"], "berk")  # e-posta, ad çelişse de
         self.assertIsNone(k.kart_esle(kayit["kartlar"][4], kisiler))
         self.assertFalse(k._ad_uyumlu("Mert Berk Özer", "Mehmet Berk Özer"))
-        self.assertTrue(k._ad_uyumlu("Eylül Sezer", "Eylül Damla Gönül Sezer"))
+        self.assertTrue(k._ad_uyumlu("Ayla Kurgu", "Ayla Nur Deniz Kurgu"))
 
     def test_tipler(self):
         for t in ("asistan", "hocasi"):

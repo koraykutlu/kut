@@ -19,7 +19,8 @@ import ag_sir
 HAYIR = ("false", "hayir", "no", "0", "off")
 METIN_UZANTI = {".md", ".txt", ".json", ".csv", ".tsv", ".yaml", ".yml", ".html", ".htm"}
 HASSAS_AD = re.compile(r"kilit|(?<![a-z])pin(?![a-z])|(?<![a-z])ayar|settings|token|secret|sifre|parola|password|\.env|\.key|\.pem|credential|anahtar", re.I)
-ATLANAN_DOSYA = {"haric.md", "ag.html"}
+ATLANAN_DOSYA = {"haric.md", "ag.html", "sonuclar.md", "sonuclar.md.kilit"}   # sonuclar.md: Kut önerileri defteri (türev; satırlar kişi adı/notu taşır, sohbetin ihtiyacı yok)
+ATLANAN_DIZIN = {"arsiv", "ozet"}   # ozet/: haftalık özetler (türev; okunur kısım satır satır kişi kimliği taşımadığından kapı süzgeci yetmez)
 
 
 def _red_mi(alanlar, hl):
@@ -118,7 +119,7 @@ def _kopyala(kok, hedef, kapi):
         goreli = os.path.relpath(yol, kok)
         parca = [] if goreli == "." else goreli.replace("\\", "/").split("/")
         dizinler[:] = [d for d in dizinler if _gercek(os.path.join(yol, d), kok_g) and not HASSAS_AD.search(d)
-                       and not (not parca and d == "arsiv") and not (parca == ["belgeler"] and d in kapi.red)]
+                       and not (not parca and d in ATLANAN_DIZIN) and not (parca == ["belgeler"] and d in kapi.red)]
         for ad in dosyalar:
             tam, kid, ust = os.path.join(yol, ad), ad.split(".")[0], (parca[0] if parca else "")
             if (not parca and ad in ATLANAN_DOSYA) or ad.endswith(".eski") or HASSAS_AD.search(ad) or not _gercek(tam, kok_g):

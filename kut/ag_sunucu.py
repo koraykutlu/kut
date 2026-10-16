@@ -44,7 +44,13 @@ import ag_kilit as kl  # noqa: E402
 import ag_hedef as hd  # noqa: E402
 import ag_kesif as ks  # noqa: E402
 import ag_strateji as st  # noqa: E402
+import ag_ajanda as aj  # noqa: E402
 import ag_guncelle as gu  # noqa: E402
+import ag_yol as yl  # noqa: E402
+import ag_brifing as br  # noqa: E402
+import ag_sonuc as sn  # noqa: E402
+import ag_ozet as oz  # noqa: E402
+import ag_bildirim as bd  # noqa: E402
 import ag_demo  # noqa: E402
 import goc  # noqa: E402
 
@@ -181,7 +187,9 @@ def kisi_arsivle(g):
     kisi_bul(kid)
     hedef = os.path.join(c.ARSIV, "cikarilan")
     os.makedirs(hedef, exist_ok=True)
-    shutil.move(os.path.join(c.KISILER, f"{kid}.md"), os.path.join(hedef, f"{kid}-{date.today():%Y%m%d}.md"))
+    yeni = os.path.join(hedef, f"{kid}-{date.today():%Y%m%d}.md")
+    shutil.move(os.path.join(c.KISILER, f"{kid}.md"), yeni)
+    os.utime(yeni, None)   # arşiv bakımı yaşı taşıma anından saysın (taşıma eski mtime'ı koruyabilir)
     return {"id": kid}
 
 
@@ -744,8 +752,12 @@ def kisi_uzak(g):
     c.surum_al(g["id"])
     if g["kapali"]:
         k["remote_allowed"] = "false"
+        if k.get("visibility") != "private":   # private'ı Kut koyacak (kisi_yaz): açarken yalnız Kut'un koyduğu kaldırılır, kullanıcının elle koyduğu kalır
+            k["visibility_kut"] = "true"
     else:
         k.pop("remote_allowed", None)
+        if k.pop("visibility_kut", None) and k.get("visibility") == "private":   # kapatırken Kut koymuştu; açınca ikinci beynin bağlamına geri döner
+            k.pop("visibility")
     c.kisi_yaz(g["id"], k, govde)
     mdl.gecmis_temizle()
     mdl.claude_oturumlari_iptal_et()   # sunucu tarafı: istemci oturum kimliğini sıfırlamasa da eski Claude konuşması --resume edilmez
@@ -991,6 +1003,19 @@ class Isleyici(BaseHTTPRequestHandler):
                 if self.headers.get("X-Ag-Anahtar") != ANAHTAR:
                     return self._gonder(403, {"hata": "anahtar"})
                 return self._gonder(200, pusula())
+            if yol == "/api/ajanda":   # Pusula → Takvim: tarihli her şeyin salt-okur akışı; bas/bit YYYY-AA-GG, geçersizse ValueError → 400
+                if self.headers.get("X-Ag-Anahtar") != ANAHTAR:
+                    return self._gonder(403, {"hata": "anahtar"})
+                q = parse_qs(urlsplit(self.path).query)
+                return self._gonder(200, aj.ajanda(q.get("bas", [""])[0], q.get("bit", [""])[0]))
+            if yol == "/api/sonuclar":   # Pusula → Sonuçlar: Kut'un önerileri ve sonuçları (salt okur)
+                if self.headers.get("X-Ag-Anahtar") != ANAHTAR:
+                    return self._gonder(403, {"hata": "anahtar"})
+                return self._gonder(200, sonuclar_liste())
+            if yol == "/api/bildirim":   # Ayarlar → "Kut sana gelsin": ayar + zamanlanmış görev gerçekten kurulu mu (salt okur)
+                if self.headers.get("X-Ag-Anahtar") != ANAHTAR:
+                    return self._gonder(403, {"hata": "anahtar"})
+                return self._gonder(200, bd.durum())
             if yol == "/api/guncelleme":
                 if self.headers.get("X-Ag-Anahtar") != ANAHTAR:
                     return self._gonder(403, {"hata": "anahtar"})
@@ -1429,11 +1454,216 @@ DEGISTIRMEYEN.add("/api/arayuz/ses")
 KOKEN_DENETIMLI.add("/api/arayuz/ses")   # sihirbaz ucu gibi: anahtara ek olarak Origin de bu sunucudan gelmeli
 
 
+# ---------- tanıştırma yolu, brifing, sonuç döngüsü, haftalık özet, bildirim (ag_yol, ag_brifing, ag_sonuc, ag_ozet, ag_bildirim) ----------
+# Yerel ve deterministik: model ve ağ yok. Kişi verisi her istekte c.veri_hazirla(foto_gom=False); hariç kişi hiçbir çıktıda yoktur.
+# İstemci girdisi sıkı doğrulanır (bilinmeyen alan, tür, uzunluk, kişi kimliği); hesaplama işlevleri saftır, demo da aynılarını çağırır.
+YOL_AMAC_AZAMI, YOL_ARAMA_AZAMI, SONUC_METIN_AZAMI, SONUC_KANAL_AZAMI = 120, 80, 200, 30
+SONUC_LISTE_AZAMI = 60
+_dene_kilit = threading.Lock()
+_bildirim_kilit = threading.Lock()   # zamanlayıcı/PowerShell alt süreçleri (≤20 sn) veri kilidini tutmasın; kendi küçük kilidi ayar yazımlarını sıraya koyar
+
+
+def _izinli_alanlar(g, izinli):
+    for a in g:
+        if a not in izinli:
+            raise ValueError("Bilinmeyen alan: " + str(a)[:30])
+
+
+def _satir(g, alan, ad, azami, zorunlu=False):
+    """İstemci metni: dize olmalı, tek satıra indirgenir, en çok `azami` karakter. Boşsa '' (zorunluysa hata)."""
+    v = g.get(alan)
+    if v is None or v == "":
+        if zorunlu:
+            raise ValueError(f"{ad} boş olamaz.")
+        return ""
+    if not isinstance(v, str):
+        raise ValueError(f"{ad} metin olmalı.")
+    v = " ".join(v.split())
+    if len(v) > azami:
+        raise ValueError(f"{ad} en çok {azami} karakter olabilir.")
+    if zorunlu and not v:
+        raise ValueError(f"{ad} boş olamaz.")
+    return v
+
+
+def _mantiksal(g, alan, varsayilan=False):
+    v = g.get(alan, varsayilan)
+    if not isinstance(v, bool):
+        raise ValueError(f"{alan}: true ya da false olmalı.")
+    return v
+
+
+def _kisi_id(g, alan="id"):
+    kid = g.get(alan)
+    if not isinstance(kid, str) or not c.gecerli_id(kid):
+        raise ValueError("geçersiz kişi")
+    return kid
+
+
+def yol_hesapla(g, veri):
+    """{id? | ara?, amac?} → tanıştırma yolu (`mod: "yol"`) ya da arama sonucu (`mod: "ara"`). Saf: veri sözlüğünden hesaplar."""
+    _izinli_alanlar(g, {"id", "ara", "amac"})
+    amac = _satir(g, "amac", "Amaç", YOL_AMAC_AZAMI)
+    if g.get("id") and g.get("ara"):
+        raise ValueError("Ya kişi ya da arama ver, ikisini birden değil.")
+    if g.get("id"):
+        return {"mod": "yol", **yl.yollar(veri, _kisi_id(g), 3, amac)}
+    ara = _satir(g, "ara", "Arama", YOL_ARAMA_AZAMI, zorunlu=True)
+    return {"mod": "ara", **yl.ara(veri, ara, amac)}
+
+
+def brifing_hesapla(g, veri, sonuclar, hedefler, strateji):
+    """{id} → görüşme brifingi + Markdown. Saf: parametreleri hiçbir yerden kendisi okumaz (gerçek ve demo girdisi çağırandan gelir)."""
+    _izinli_alanlar(g, {"id"})
+    b = br.brifing(veri, _kisi_id(g), sonuclar=sonuclar, hedefler=hedefler, strateji=strateji)
+    return {"brifing": b, "markdown": br.markdown(b)}
+
+
+def _veri_oku():
+    return c.veri_hazirla(foto_gom=False)
+
+
+def yol_uc(g):
+    return yol_hesapla(g, _veri_oku())
+
+
+def brifing_uc(g):
+    return brifing_hesapla(g, _veri_oku(), sn.oku(), hd.hepsi(("aktif", "taslak")), st.son() or {})
+
+
+def _strateji_sonuclari():
+    """Son okumalardaki sonucu işaretlenmiş strateji hamleleri (istatistiğe 'strateji' kaynağı olarak katılır; yalnız okur)."""
+    sonuc = []
+    try:
+        for f in st.okumalar()[:8]:
+            try:
+                j = st.oku(f)
+            except (ValueError, OSError):
+                continue
+            for h in j.get("hamleler") or []:
+                if isinstance(h, dict) and h.get("sonuc"):
+                    sonuc.append({"sonuc": h["sonuc"], "sonuc_tarih": h.get("sonuc_tarih") or str(j.get("tarih") or "")[:10]})
+    except OSError:
+        pass
+    return sonuc
+
+
+def _kayit_bul(no):
+    return next((r for r in sn.oku() if r["no"] == no), None)
+
+
+def sonuc_isaretle(g):
+    """{no, sonuc, not?, temas?, kanal?, neden?} → kaydın sonucunu işaretler; temas=true ise kişinin temas bölümüne satır eklenir (hariç kişiye eklenmez).
+    sonuc "reddedildi" ("Uymuyor") için `neden` (sn.RED_NEDENLERI kodu) zorunludur; `not` isteğe bağlı kısa açıklamadır."""
+    _izinli_alanlar(g, {"no", "sonuc", "not", "temas", "kanal", "neden"})
+    no = g.get("no")
+    if isinstance(no, bool) or not isinstance(no, int) or no < 1:
+        raise ValueError("geçersiz kayıt numarası")
+    if not isinstance(g.get("sonuc"), str) or g["sonuc"] not in sn.SONUCLAR:
+        raise ValueError("bilinmeyen sonuç")
+    neden = g.get("neden", "")
+    if not isinstance(neden, str) or (neden and neden not in sn.RED_NEDENLERI):
+        raise ValueError("bilinmeyen neden")
+    r = sn.isaretle(no, g["sonuc"], _satir(g, "not", "Not", SONUC_METIN_AZAMI), _mantiksal(g, "temas"), _satir(g, "kanal", "Kanal", SONUC_KANAL_AZAMI),
+                    neden=neden if g["sonuc"] == "reddedildi" else "")
+    return {**r, "kayit": _kayit_bul(no)}
+
+
+def sonuc_kaydet(g):
+    """{kaynak: "yol"|"brifing", kisi, oneri} → önerilen adımı 'bekliyor' olarak deftere yazar ("Bu adımı takip et"). Hariç kişi için 400."""
+    _izinli_alanlar(g, {"kaynak", "kisi", "oneri"})
+    if g.get("kaynak") not in ("yol", "brifing"):
+        raise ValueError("Bu kaynaktan kayıt açılamaz.")
+    kid = _kisi_id(g, "kisi")
+    k = kisi_bul(kid)
+    if not k:
+        raise ValueError("kişi bulunamadı")
+    if c.haric_mi(k):
+        raise ValueError("Bu kişi hariç listende; öneri kaydedilmez.")
+    no = sn.kaydet(g["kaynak"], kid, _satir(g, "oneri", "Öneri", SONUC_METIN_AZAMI, zorunlu=True))
+    return {"no": no, "kayit": _kayit_bul(no)}
+
+
+def sonuclar_liste():
+    """Pusula → Sonuçlar: son 60 kayıt (yeniden eskiye; hariç kişininkiler yok), son 8 hafta istatistiği (strateji sonuçları dahil), etiketler."""
+    kisi = {k["id"]: k for k in _veri_oku()["kisiler"][1:]}
+    kayitlar = []
+    for r in sorted(sn.oku(), key=lambda r: (r.get("tarih") or "", r["no"]), reverse=True):
+        k = kisi.get(r["kisi"])
+        if k and k.get("haric"):
+            continue
+        kayitlar.append({**r, "kisi_ad": k["ad"] if k else ""})
+        if len(kayitlar) == SONUC_LISTE_AZAMI:
+            break
+    return {"kayitlar": kayitlar, "istatistik": sn.istatistik(strateji_sonuclari=_strateji_sonuclari()), "etiketler": sn.SONUCLAR,
+            "red_nedenleri": sn.RED_NEDENLERI}
+
+
+def ozet_uret(g):
+    """{yenile?} → bu haftanın özeti (yoksa üretilir ve deftere yazılır). Kayıtlı özette sonradan hariç listesine girenler çıkarılır; istatistiğe strateji sonuçları katılır."""
+    _izinli_alanlar(g, {"yenile"})
+    o = oz.olustur(yenile=_mantiksal(g, "yenile"))
+    haric = {k["id"] for k in _veri_oku()["kisiler"][1:] if k.get("haric")}
+    for alan, anahtar in (("maddeler", "id"), ("sozler", "id"), ("sonuc_bekleyen", "kisi")):
+        o[alan] = [m for m in o.get(alan) or [] if m.get(anahtar) not in haric]
+    o["bos"] = not o["maddeler"] and not o["sozler"]
+    o["istatistik"] = sn.istatistik(strateji_sonuclari=_strateji_sonuclari())
+    return {"ozet": o, "goruldu": oz.gorulen() == o.get("hafta"), "red_nedenleri": sn.RED_NEDENLERI}
+
+
+def ozet_goruldu(g):
+    _izinli_alanlar(g, {"hafta"})
+    hafta = g.get("hafta")
+    m = re.fullmatch(r"(\d{4})-W(\d{2})", hafta) if isinstance(hafta, str) else None
+    try:
+        date.fromisocalendar(int(m.group(1)), int(m.group(2)), 1)   # 01–53 ve o yılda gerçekten var olan hafta
+    except (AttributeError, ValueError):
+        raise ValueError("geçersiz hafta (YYYY-Www)") from None
+    oz.goruldu(hafta)
+    return {}
+
+
+def bildirim_ayarla(g):
+    """{acik?, siklik?, gun?, saat?, adlar?} → zamanlanmış görevi kurar/kaldırır, ayarı yazar, durumu döndürür. Kurulum hatası anlaşılır 400 olur."""
+    with _bildirim_kilit:
+        try:
+            return bd.ayarla(g)
+        except bd.KurulumHatasi as e:
+            raise ValueError(str(e))
+
+
+def bildirim_dene(g):
+    """Deneme bildirimi (içerik sabit: ad, not, söz yok). Aynı anda tek deneme."""
+    _izinli_alanlar(g, set())
+    if not _dene_kilit.acquire(blocking=False):
+        raise ValueError("Bir deneme bildirimi zaten gösteriliyor; birkaç saniye bekle.")
+    try:
+        return {"gosterildi": bd.bildir("Kut", "Bu bir deneme bildirimi. Haftalık özet hazır olunca Kut sana böyle haber verecek.")}
+    finally:
+        _dene_kilit.release()
+
+
+ISLEMLER.update({"/api/yol": yol_uc, "/api/brifing": brifing_uc, "/api/ozet": ozet_uret, "/api/ozet/goruldu": ozet_goruldu,
+                 "/api/sonuc": sonuc_isaretle, "/api/sonuc/kaydet": sonuc_kaydet, "/api/bildirim": bildirim_ayarla, "/api/bildirim/dene": bildirim_dene})
+DEGISTIRMEYEN.update({"/api/yol", "/api/brifing", "/api/ozet", "/api/ozet/goruldu", "/api/sonuc/kaydet", "/api/bildirim", "/api/bildirim/dene"})   # harita sayfası değişmez
+KILITSIZ.update({"/api/bildirim", "/api/bildirim/dene"})   # schtasks/PowerShell/osascript bekler (≤20 sn); veri kilidini tutmasınlar
+KOKEN_DENETIMLI.update({"/api/ozet", "/api/ozet/goruldu", "/api/sonuc", "/api/sonuc/kaydet", "/api/bildirim", "/api/bildirim/dene"})   # yazanlar: Origin de bu sunucudan gelmeli
+
+
 # ---------- demo önizlemesi: "Deniz'in salısı" (ag_demo.py). Yalıtım ve gerekçe modülün başındadır ----------
 # /api/demo/baslat gerçek anahtarla (sayfa açık ve kilit açıkken), diğerleri DEMO anahtarıyla çalışır; ikisi de kilit + yerel Origin ister.
 # Hiçbiri veri kilidini tutmaz, statik yenileme/günlük yazmaz: yazdıkları yalnız geçici demo klasörüdür.
+def demo_yol(g):
+    return yol_hesapla(g, ag_demo.ornek()["veri"])
+
+
+def demo_brifing(g):
+    o = ag_demo.ornek()
+    return brifing_hesapla(g, o["veri"], o["sonuclar"], o["hedefler"], o["strateji"])   # hiçbiri gerçek veriden okunmaz
+
+
 DEMO_UCLARI = {"/api/demo/baslat": lambda g: ag_demo.baslat(), "/api/demo/kapat": lambda g: ag_demo.kapat(), "/api/demo/sor": ag_demo.sor,
-               "/api/demo/soz": ag_demo.soz_onayla, "/api/demo/isinma": ag_demo.isinma}
+               "/api/demo/soz": ag_demo.soz_onayla, "/api/demo/isinma": ag_demo.isinma, "/api/demo/yol": demo_yol, "/api/demo/brifing": demo_brifing}
 DEMO_ANAHTARLI = set(DEMO_UCLARI) - {"/api/demo/baslat"}
 ISLEMLER.update(DEMO_UCLARI)
 DEGISTIRMEYEN.update(DEMO_UCLARI)
@@ -1465,6 +1695,8 @@ def tarayici_ac(url):
 
 def main():
     global PORT
+    if "--ozet" in sys.argv[1:]:   # doğrudan `ag_sunucu.py --ozet` çalıştırılırsa da sunucu açılmaz (normal giriş ag_giris.py'dir)
+        sys.exit(bd.calistir(sys.argv))
     if os.environ.get("AGIM_PORT", "").isdigit():  # test için; --port önceliklidir
         PORT = int(os.environ["AGIM_PORT"])
     if "--port" in sys.argv:  # test ya da ikinci veri klasörü için
@@ -1479,6 +1711,10 @@ def main():
         goc.calistir(c.VERI)   # yalnız bekleyen veri göçü varsa (önce yedek); şimdilik hiç yok
     except Exception:
         gunluk("veri göçü: " + hata_izi())
+    try:
+        gunluk("arşiv bakımı: " + json.dumps(c.arsiv_bakimi(), ensure_ascii=False))
+    except Exception:
+        gunluk("arşiv bakımı: " + hata_izi())
     sunucu = ThreadingHTTPServer(("127.0.0.1", PORT), Isleyici)
     gu.KAPAT, gu.PORT_AL = sunucu.shutdown, lambda: PORT
     threading.Thread(target=gu.otomatik_denetim, daemon=True).start()   # yalnız kullanıcı izin verdiyse ve haftada bir

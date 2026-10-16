@@ -171,7 +171,10 @@ def _kapidan_gec(idler):
 def analiz_et(ham, sohbet, ad_eslesme, veri_klasoru):
     _kapidan_gec(ad_eslesme.values())
     yol = os.path.join(veri_klasoru, "gelen", "whatsapp", os.path.basename(ham))
-    metin = open(yol, encoding="utf-8").read()
+    if not os.path.exists(yol):
+        raise RuntimeError("sohbet metni artık yok (analizden sonra silinir); yeniden analiz için sohbeti 'İçe aktar'dan tekrar yükle")
+    with open(yol, encoding="utf-8") as f:   # kapatılmış olmalı: analizden sonra silinecek (Windows açık dosyayı silmez)
+        metin = f.read()
     if len(metin) > AZAMI_KARAKTER:
         metin = "[...sohbetin eski kısmı kısaltıldı...]\n" + metin[-AZAMI_KARAKTER:]
     b = c.ben()
@@ -195,8 +198,9 @@ def analiz_et(ham, sohbet, ad_eslesme, veri_klasoru):
         alanlar="siyaset, finans, yapay-zeka, teknoloji, muhendislik, saglik, su-cevre, tarim, hukuk, egitim, girisim, medya, spor, sanat, oyun",
         turler=", ".join(t for t in c.TURLER if t != "ben"), ozellikler=", ".join(o[0] for o in c.OZELLIKLER), olcut=c.olcut_metni(),
         tipler=", ".join(c.TIPLER), metin=metin)
-    sonuc = _model(istem)
-    return uygula(sonuc, ad_eslesme, sohbet, b.get("asistan") or "Claude")
+    sonuc = uygula(_model(istem), ad_eslesme, sohbet, b.get("asistan") or "Claude")
+    c.ham_sil(yol)   # ham sohbet yalnız analiz için tutulur; sonuç (öneriler, bağlar, temaslar) dosyalarda kalır
+    return sonuc
 
 
 def _model(istem, okuma_klasoru=None):

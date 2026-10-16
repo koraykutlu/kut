@@ -69,6 +69,20 @@ class EtkinlikKapisiTest(unittest.TestCase):
         self.assertEqual(ks.durum()["hata"], "")
         self.assertIn("kapalı", ks.durum()["mesaj"])
 
+    def test_vekilpedia_kapaliyken_durum_hazirlaniyor_kalmaz(self):
+        # Vekilpedia kapalı ve CSV yokken dizin kurulmaya çalışılmaz; Pusula alt başlığı "hazırlanıyor"da takılı kalmaz.
+        with mock.patch.object(ks, "_istek", side_effect=AssertionError("ağ çağrıldı")),                 mock.patch.object(ks, "_vekil_kayitlari", side_effect=AssertionError("dizin kuruldu")) as dizin:
+            ks.yenile(True)
+            for _ in range(100):
+                if not ks.durum()["calisiyor"]:
+                    break
+                time.sleep(0.05)
+        self.assertFalse(dizin.called)
+        self.assertEqual(ks.durum()["hata"], "")
+        self.assertNotIn("hazırlanıyor", ks.durum()["mesaj"])
+        self.assertIn("vekil verisi kapalı", ks.durum()["mesaj"])
+        self.assertIn("etkinlik taraması kapalı", ks.durum()["mesaj"])
+
     def test_onbellek_varsa_acik(self):
         self._onbellek()
         self.assertTrue(ks.etkinlik_acik())
