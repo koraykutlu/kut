@@ -1,5 +1,7 @@
 # Kut
 
+**Türkçe** · [English](README.en.md)
+
 **Kişisel ilişki ağın, yalnız senin bilgisayarında.** Tanıdığın insanları fotoğraflı bir haritada gör, her görüşmeden sonra tek cümle not düş,
 kimi ihmal ettiğini ve bu hafta kime yazman gerektiğini hatırla. Hesap yok, bulut yok; verin düz Markdown dosyaları olarak diskinde durur.
 
@@ -7,18 +9,9 @@ Tanıtım sayfası: **[koraykutlu.github.io/kut](https://koraykutlu.github.io/ku
 
 ![Kut: harita, kişi kartı, bu hafta ve Pusula](docs/img/kut-demo.gif)
 
-> *Kut (formerly "Ağım") is a local, private personal-network app: a photo map of the people you know, contact log, relationship graph,
-> conflict-of-interest hints, a "who should I reach out to this week" list and a log of promises you gave or received. It is a Python 3
-> standard-library HTTP server bound to `127.0.0.1` plus a single-page HTML UI; no accounts, no cloud, no dependencies. Your data lives as
-> plain Markdown files and never enters this repository. v1.1 adds a first-run setup wizard with a guided tour, calendar (.ics) and
-> LinkedIn (CSV) import, a Settings window for optional sources, a choice of AI provider (Claude Code, Codex, Gemini or local Ollama;
-> no API keys stored) and a built-in fictional demo story ("Deniz'in salısı") that never touches your data. v1.2 adds introduction paths
-> ("who can introduce me to X?"), a one-page pre-meeting brief, a weekly digest with an outcome loop (did it work? / doesn't fit, and why),
-> optional OS notifications (off by default, no names), stronger local privacy (archive retention, private-by-default derived files) and a
-> sky that follows your computer's clock. All of these run locally and deterministically, with no model call. The AI assistant is optional:
-> every record passes a local privacy gate first (see [Gizlilik](#gizlilik)). The interface is in Turkish. Try it without any personal data:
-> the "Önce bir örnekle göster" button in the first-run wizard, or `py -3 demo/demo_veri.py --hedef demo-veri` then
-> `py -3 kut.pyw --veri demo-veri` ([Demo verisiyle deneme](#demo-verisiyle-deneme)). Licence: MIT.*
+> *Kut (formerly "Ağım") is a local, private personal-network app: a photo map of the people you know, contact log, promises,
+> introduction paths and a weekly "who should I reach out to" digest. Python 3 standard library, bound to `127.0.0.1`, no accounts, no cloud,
+> plain Markdown data. The interface is in Turkish. **Full English README: [README.en.md](README.en.md).** Licence: MIT.*
 
 Bu README'deki tüm ekran görüntüleri ve GIF (v1.1 arayüzü), `demo/demo_veri.py`'nin ürettiği **tamamen kurgusal** verilerle (merkezdeki kişi "Deniz Demo"), içe aktarma örnekleri `demo/ornek/` altındaki kurgusal dosyalarla ve uygulama içi "Deniz'in salısı" demosuyla çekilmiştir; gerçek kişi yoktur.
 
