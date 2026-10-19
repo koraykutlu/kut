@@ -52,14 +52,14 @@ class ModelTest(unittest.TestCase):
     # ---- seçim ve ayar ----
     def test_varsayilan_claude_ve_eski_model_anahtarlari(self):
         self.assertEqual(mdl.secili(), "claude")
-        self.assertEqual(mdl.model_adi("analiz"), "claude-haiku-5-5")
-        self.assertEqual(mdl.model_adi("sohbet"), "claude-haiku-5-5")
-        self.assertEqual(mdl.model_adi("strateji"), "claude-opus-5-5")
+        self.assertEqual(mdl.model_adi("analiz"), "haiku")
+        self.assertEqual(mdl.model_adi("sohbet"), "haiku")
+        self.assertEqual(mdl.model_adi("strateji"), "opus")
         ia.ayar_yaz({"analiz_modeli": "a", "sohbet_modeli": "s", "strateji_modeli": "t"})
         self.assertEqual([mdl.model_adi(g) for g in ("analiz", "sohbet", "strateji")], ["a", "s", "t"])
         ia.ayar_yaz({"analiz_modeli": "a"})
         self.assertEqual(mdl.model_adi("sohbet"), "a")   # eski geri düşüş
-        self.assertEqual(mdl.model_etiketi("strateji"), "claude-opus-5-5")   # eskisi gibi düz kimlik
+        self.assertEqual(mdl.model_etiketi("strateji"), "opus")   # eskisi gibi düz kimlik
 
     def test_bilinmeyen_saglayici_claude_sayilir(self):
         self.sec("uydurma")
@@ -96,7 +96,7 @@ class ModelTest(unittest.TestCase):
     def test_claude_analiz_argumanlari_birebir(self):
         y = self.sahte(self.cevap_claude())
         r = mdl.cagir("analiz", "merhaba", zaman_asimi=900, json_cikti=True, cwd=self.cwd)
-        self.assertEqual(y["arg"], ["claude-yolu", "-p", "--output-format", "json", "--no-session-persistence", "--model", "claude-haiku-5-5",
+        self.assertEqual(y["arg"], ["claude-yolu", "-p", "--output-format", "json", "--no-session-persistence", "--model", "haiku",
                                     "--disallowedTools", "Bash", "Edit", "Write", "Glob", "Grep", "WebFetch", "WebSearch", "NotebookEdit", "Task", "Read"])
         self.assertEqual((y["cwd"], y["timeout"]), (self.cwd, 900))
         self.assertEqual((r.metin, r.oturum), ("tamam", "s1"))
@@ -112,13 +112,13 @@ class ModelTest(unittest.TestCase):
         y = self.sahte(self.cevap_claude())
         oturum = "a" * 24
         mdl.cagir("sohbet", "s", sistem="ROL", zaman_asimi=240, oturum=oturum, oturum_kalici=True, veri_klasoru="/v", cwd=self.cwd)
-        self.assertEqual(y["arg"], ["claude-yolu", "-p", "--output-format", "json", "--model", "claude-haiku-5-5", "--add-dir", "/v",
+        self.assertEqual(y["arg"], ["claude-yolu", "-p", "--output-format", "json", "--model", "haiku", "--add-dir", "/v",
                                     "--allowedTools", "Read", "Grep", "Glob", "--disallowedTools", "Bash", "Edit", "Write", "WebFetch", "WebSearch",
                                     "NotebookEdit", "Task", "--append-system-prompt", "ROL", "--resume", oturum])
         mdl.cagir("sohbet", "s", sistem="ROL", oturum="gecersiz!", oturum_kalici=True, veri_klasoru="/v", cwd=self.cwd)
         self.assertNotIn("--resume", y["arg"])
         mdl.cagir("strateji", "s", sistem="ROL", veri_klasoru="/v", cwd=self.cwd)
-        self.assertEqual(y["arg"][:8], ["claude-yolu", "-p", "--output-format", "json", "--no-session-persistence", "--model", "claude-opus-5-5", "--add-dir"])
+        self.assertEqual(y["arg"][:8], ["claude-yolu", "-p", "--output-format", "json", "--no-session-persistence", "--model", "opus", "--add-dir"])
         self.assertNotIn("--resume", y["arg"])
 
     def test_claude_hatalari(self):

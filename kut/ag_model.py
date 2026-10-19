@@ -29,7 +29,7 @@ import ag_kilit
 import ag_sir
 
 VARSAYILAN_SAGLAYICI = "claude"
-VARSAYILAN_MODEL = {"analiz": "claude-haiku-5-5", "sohbet": "claude-haiku-5-5", "strateji": "claude-opus-5-5"}  # yalnız Claude için
+VARSAYILAN_MODEL = {"analiz": "haiku", "sohbet": "haiku", "strateji": "opus"}  # yalnız Claude için; kısa ad, Claude Code kendi kataloğundaki güncel modele çözer (tam kimlik eski CLI'de unrecognized_model verir)
 AYAR_ANAHTARI = {"analiz": "analiz_modeli", "sohbet": "sohbet_modeli", "strateji": "strateji_modeli"}
 OLLAMA_ADRES = ("127.0.0.1", 11434)
 MODEL_AD = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:/@\[\]-]{0,99}")   # bayrak enjeksiyonunu önler ("-" ile başlayamaz)

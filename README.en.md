@@ -5,7 +5,7 @@
 **Your personal network, only on your computer.** See the people you know on a photo map, jot down one sentence after every conversation,
 and remember who you have been neglecting and who you should write to this week. No account, no cloud; your data sits on your disk as plain Markdown files.
 
-Website: **[koraykutlu.github.io/kut](https://koraykutlu.github.io/kut/)** · Download: [latest release](https://github.com/koraykutlu/kut/releases/latest)
+Website: **[koraykutlu.github.io/kut/en](https://koraykutlu.github.io/kut/en/)** (Türkçe: [koraykutlu.github.io/kut](https://koraykutlu.github.io/kut/)) · Download: [latest release](https://github.com/koraykutlu/kut/releases/latest)
 
 ![Kut: map, person card, this week and Compass](docs/img/kut-demo.gif)
 

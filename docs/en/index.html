@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Kut · Your personal network, only on your computer</title>
+<meta name="description" content="A local-first personal CRM: see the people you know on a map, jot one line after every conversation, and get reminded who to reach out to this week. No account, no cloud; open source (MIT).">
+<meta name="theme-color" content="#0B2547">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Cpath%20d%3D%22M27.41%2020.91%20L32.00%203.00%20L36.59%2020.91Z%22%20fill%3D%22%23F2C14E%22/%3E%3Cpath%20d%3D%22M36.59%2020.91%20L52.51%2011.49%20L43.09%2027.41Z%22%20fill%3D%22%23F2C14E%22/%3E%3Cpath%20d%3D%22M43.09%2027.41%20L61.00%2032.00%20L43.09%2036.59Z%22%20fill%3D%22%23F2C14E%22/%3E%3Cpath%20d%3D%22M43.09%2036.59%20L52.51%2052.51%20L36.59%2043.09Z%22%20fill%3D%22%23F2C14E%22/%3E%3Cpath%20d%3D%22M36.59%2043.09%20L32.00%2061.00%20L27.41%2043.09Z%22%20fill%3D%22%23F2C14E%22/%3E%3Cpath%20d%3D%22M27.41%2043.09%20L11.49%2052.51%20L20.91%2036.59Z%22%20fill%3D%22%23F2C14E%22/%3E%3Cpath%20d%3D%22M20.91%2036.59%20L3.00%2032.00%20L20.91%2027.41Z%22%20fill%3D%22%23F2C14E%22/%3E%3Cpath%20d%3D%22M20.91%2027.41%20L11.49%2011.49%20L27.41%2020.91Z%22%20fill%3D%22%23F2C14E%22/%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%229%22%20fill%3D%22none%22%20stroke%3D%22%23F2C14E%22%20stroke-width%3D%223%22/%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%223%22%20fill%3D%22%23F2C14E%22/%3E%3C/svg%3E">
+<link rel="canonical" href="https://koraykutlu.github.io/kut/en/">
+<link rel="alternate" hreflang="tr" href="https://koraykutlu.github.io/kut/">
+<link rel="alternate" hreflang="en" href="https://koraykutlu.github.io/kut/en/">
+<link rel="alternate" hreflang="x-default" href="https://koraykutlu.github.io/kut/">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="tr_TR">
+<meta property="og:site_name" content="Kut">
+<meta property="og:title" content="Kut · Your personal network, only on your computer">
+<meta property="og:description" content="A local-first personal CRM: see the people you know on a map, jot one line after every conversation, and get reminded who to reach out to this week. No account, no cloud; open source (MIT).">
+<meta property="og:url" content="https://koraykutlu.github.io/kut/en/">
+<meta property="og:image" content="https://koraykutlu.github.io/kut/img/harita.png">
+<meta property="og:image:width" content="1400">
+<meta property="og:image:height" content="900">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700;800&family=Noto+Sans:wght@400;500;600&display=swap">
+<style>
+/* Düzen: uygulamanın kendisi gibi; canlı boyalı gök sabit arka planda, içerik onun üstünde cam paneller.
+   Aşağı kaydırdıkça gök kararır (uygulamadaki D uniformu), cam okunur kalır. Palet ve yazı Kut arayüzünden (ag_sablon.html). */
+:root{
+  --gok:#0B2547;            /* --bg, gündüz lacivert */
+  --cam:rgba(11,37,71,.62); --cam-yogun:rgba(11,37,71,.80); --cam-kenar:rgba(190,215,250,.20); --cam-isik:rgba(255,255,255,.20);
+  --cizgi:rgba(140,180,230,.18); --cizgi2:rgba(140,180,230,.32); --cip:rgba(140,180,230,.08);
+  --metin:#EAF2FF; --soluk:#9FB8DA; --silik:#7F9BC2;
+  --vurgu:#5AAEFF; --onv:#06172E;   /* --acc ve üstündeki yazı */
+  --gunes:#F2C14E; --krem:#FFF6E0;  /* güneş işareti ve KUT yazısı */
+  --iyi:#5FD3A0; --kirmizi:#F07A6A;
+  --t-akademi:#86A9FF; --t-yakin:#F08A6E; --t-is:#5AC8FA; --t-finans:#3CC9B0; --t-etkinlik:#B79CFF;
+  --baslik:Bahnschrift,"Barlow","Segoe UI Variable Display","Segoe UI",sans-serif;
+  --yazi:"Segoe UI Variable Text","Segoe UI","Noto Sans",system-ui,sans-serif;
+  --es:Consolas,"Cascadia Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --r-pencere:20px; --r-orta:12px; --r-ic:8px; --r-dugme:10px;
+  --golge:0 18px 48px -14px rgba(2,10,24,.6),0 2px 8px rgba(2,10,24,.25);
+  --ic:inset 0 1px 0 var(--cam-isik),inset 0 0 0 1px rgba(255,255,255,.03),inset 0 -1px 0 rgba(0,0,0,.22);
+  color-scheme:dark;
+}
+:root[data-tema="gece"]{
+  --gok:#12223A; --cam:rgba(18,34,58,.64); --cam-yogun:rgba(18,34,58,.80); --cam-kenar:rgba(170,200,240,.17);
+  --cizgi:rgba(120,160,210,.16); --cizgi2:rgba(120,160,210,.30); --cip:rgba(120,160,210,.08);
+  --metin:#EAF2FB; --soluk:#93AACA; --silik:#7490B2;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+html{scroll-behavior:smooth;background:var(--gok)}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} }
+body{transition:background-color .8s;background:var(--gok);color:var(--metin);font-family:var(--yazi);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+#gok{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0;background:linear-gradient(180deg,#0A2D63,#5C9AD6)}
+:root[data-tema="gece"] #gok{background:linear-gradient(180deg,#03091A,#1A3054)}
+#perde{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse at 50% 40%,transparent 40%,rgba(4,16,36,.35))}
+.sayfa{position:relative;z-index:1;padding-inline:16px}
+.ic{max-width:1180px;margin-inline:auto}
+a{color:var(--vurgu)}
+a:focus-visible,button:focus-visible{outline:2px solid var(--gunes);outline-offset:3px}
+img{max-width:100%;display:block}
+code,kbd,.es{font-family:var(--es)}
+
+/* cam yüzey: yalnız büyük yüzeylerde */
+.cam{background:var(--cam);border:1px solid var(--cam-kenar);border-radius:var(--r-pencere);box-shadow:var(--golge),var(--ic);
+  -webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5)}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){ .cam{background:var(--cam-yogun)} }
+
+/* üst çubuk: uygulamanın başlığı */
+header.cubuk{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);z-index:5;margin-top:12px;display:flex;align-items:center;gap:8px;
+  padding:10px 12px 10px 18px;border-radius:16px}
+.logo{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--krem);margin-right:auto}
+.logo svg{width:28px;height:28px;flex:none;filter:drop-shadow(0 0 8px rgba(242,193,78,.4))}
+.logo span{font-family:var(--baslik);font-weight:800;font-size:18px;letter-spacing:.38em;line-height:1;text-shadow:0 0 14px rgba(242,193,78,.45)}
+nav.menu{display:flex;gap:2px}
+nav.menu a{color:var(--soluk);text-decoration:none;font-size:14px;padding:8px 12px;border-radius:var(--r-dugme)}
+nav.menu a:hover{color:var(--metin);background:var(--cip)}
+.dugme{display:inline-flex;align-items:center;gap:9px;font:600 14px/1 var(--yazi);text-decoration:none;border-radius:var(--r-dugme);
+  padding:11px 16px;border:1px solid var(--cizgi2);color:var(--metin);background:var(--cip);cursor:pointer;transition:background .2s,transform .2s,box-shadow .2s;white-space:nowrap}
+.dugme:hover{background:rgba(140,180,230,.16)}
+.dugme.dolu{background:var(--vurgu);color:var(--onv);border-color:transparent;box-shadow:0 0 0 1px rgba(255,255,255,.25) inset,0 6px 20px -6px rgba(90,174,255,.7)}
+.dugme.dolu:hover{transform:translateY(-1px);box-shadow:0 0 0 1px rgba(255,255,255,.3) inset,0 10px 26px -6px rgba(90,174,255,.85)}
+.dugme.pusula{border-color:var(--vurgu);color:var(--vurgu);background:rgba(90,174,255,.12)}
+.dugme svg{width:17px;height:17px;flex:none}
+.cubuk .dugme{padding:9px 14px}
+.tema-dugme{width:38px;height:38px;flex:none;display:grid;place-items:center;border-radius:var(--r-dugme);border:1px solid transparent;background:transparent;color:var(--soluk);cursor:pointer;transition:background .2s,color .2s}
+.tema-dugme:hover{background:var(--cip);color:var(--metin)}
+.tema-dugme svg{width:18px;height:18px}
+@media (max-width:760px){ nav.menu{display:none} }
+
+/* giriş */
+.giris{padding-block:clamp(56px,11vh,120px) 40px;display:grid;gap:28px}
+.amblem{display:flex;align-items:center;gap:clamp(14px,2.4vw,26px)}
+.amblem svg{width:clamp(64px,9vw,104px);height:auto;flex:none;filter:drop-shadow(0 0 22px rgba(255,217,130,.55))}
+.amblem b{font-family:var(--baslik);font-weight:700;font-size:clamp(44px,8.4vw,92px);line-height:1;color:var(--krem);letter-spacing:.42em;
+  text-shadow:0 0 24px rgba(242,193,78,.45),0 2px 18px rgba(4,16,36,.35);animation:harf 1.6s cubic-bezier(.2,.7,.2,1) .15s both}
+@keyframes harf{from{letter-spacing:.9em;transform:translateY(8px)}to{letter-spacing:.42em;transform:none}}
+@media (prefers-reduced-motion: reduce){ .amblem b{animation:none} }
+.giris h1{font-family:var(--baslik);font-weight:600;font-size:clamp(30px,4.6vw,54px);line-height:1.08;letter-spacing:.005em;margin:0;max-width:20ch;
+  text-wrap:balance;text-shadow:0 2px 24px rgba(4,16,36,.55)}
+.ozet{max-width:600px;padding:22px 24px;display:grid;gap:18px}
+.ozet p{margin:0;font-size:17px;color:var(--metin)}
+.eylem{display:flex;flex-wrap:wrap;gap:10px}
+.kunye{font-family:var(--es);font-size:12px;color:var(--soluk);letter-spacing:.02em;display:flex;flex-wrap:wrap;gap:6px 14px}
+.kunye span{white-space:nowrap}
+.kunye span::before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--gunes);margin-right:7px;vertical-align:2px}
+
+/* ekran çerçevesi */
+.cerceve{padding:10px;border-radius:24px}
+.cerceve img{border-radius:14px;width:100%;height:auto}
+.cerceve figcaption,.not{font-size:12.5px;color:var(--silik);padding:10px 6px 2px}
+.vitrin{margin:8px 0 0}
+
+/* bölümler */
+section{padding-block:clamp(56px,9vw,104px) 0}
+.etiket{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gunes);font-weight:600;margin:0 0 10px}
+h2{font-family:var(--baslik);font-weight:600;font-size:clamp(26px,3.4vw,40px);line-height:1.12;margin:0 0 14px;letter-spacing:.01em;text-wrap:balance;max-width:24ch}
+h3{font-family:var(--baslik);font-weight:600;font-size:21px;line-height:1.2;margin:0 0 8px;letter-spacing:.02em}
+.giris-metni{max-width:62ch;color:var(--soluk);margin:0 0 32px;font-size:17px}
+
+.ozellik{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(18px,3vw,40px);align-items:center;margin-top:28px}
+.ozellik.ters{grid-template-columns:minmax(0,7fr) minmax(0,5fr)}
+.ozellik.ters .metin{order:2}
+.ozellik .metin{padding:26px 26px 24px;display:grid;gap:12px;min-width:0}
+.ozellik .metin p{margin:0;color:var(--soluk)}
+.ozellik .metin p b{color:var(--metin);font-weight:600}
+@media (max-width:900px){ .ozellik,.ozellik.ters{grid-template-columns:minmax(0,1fr)} .ozellik.ters .metin{order:0} }
+
+/* tür renkleri satırı */
+.turler{display:flex;flex-wrap:wrap;gap:6px}
+.tur{font-size:12px;padding:3px 9px 3px 7px;border-radius:999px;border:1px solid var(--cizgi);color:var(--metin);display:inline-flex;align-items:center;gap:6px}
+.tur i{width:10px;height:10px;border-radius:3px;background:var(--r)}
+
+/* ihmal eşiği */
+.esik{display:grid;grid-template-columns:auto 1fr auto;gap:8px 12px;align-items:center;font-size:13.5px;margin-top:2px}
+.esik span{color:var(--soluk)}
+.esik .bar{height:6px;border-radius:3px;background:var(--cip);position:relative;overflow:hidden}
+.esik .bar i{position:absolute;inset:0 auto 0 0;border-radius:3px;background:linear-gradient(90deg,var(--gunes),var(--t-yakin))}
+.esik b{font-family:var(--es);font-weight:400;font-variant-numeric:tabular-nums;color:var(--metin);text-align:right}
+.puanlar{font-size:13px;color:var(--silik)}
+
+.satir-es{font-family:var(--es);font-size:12.5px;color:var(--metin);background:rgba(4,16,36,.45);border:1px solid var(--cizgi);border-radius:var(--r-ic);padding:10px 12px;overflow-x:auto;white-space:pre}
+.satir-es .y{color:var(--gunes)} .satir-es .k{color:var(--silik)}
+.balon{border:1px solid var(--cizgi2);border-radius:12px;padding:10px 14px;font-size:14px;background:rgba(90,174,255,.08)}
+.balon .soru{color:var(--metin)} .balon .kim{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--vurgu);margin-bottom:2px;font-weight:600}
+.cipler{display:flex;flex-wrap:wrap;gap:6px}
+.cip{font-size:12.5px;padding:5px 11px;border-radius:8px;border:1px solid var(--cizgi2);color:var(--metin);background:var(--cip)}
+.cip.yesil{border-color:rgba(95,211,160,.55);color:var(--iyi)} .cip.kirmizi{border-color:rgba(240,122,106,.55);color:var(--kirmizi)}
+
+.izgara{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:28px}
+@media (max-width:980px){ .izgara{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:620px){ .izgara{grid-template-columns:minmax(0,1fr)} }
+.kart{padding:20px 20px 18px;border-radius:16px;display:grid;gap:8px;align-content:start}
+.kart h3{font-size:18px;margin:0}
+.kart p{margin:0;color:var(--soluk);font-size:14.5px}
+.kart .ust{display:flex;align-items:center;gap:10px}
+.kart .ust svg{width:20px;height:20px;color:var(--gunes);flex:none}
+
+/* gizlilik */
+.gizlilik{display:grid;grid-template-columns:minmax(0,6fr) minmax(0,5fr);gap:clamp(18px,3vw,36px);align-items:start;margin-top:8px}
+@media (max-width:900px){ .gizlilik{grid-template-columns:minmax(0,1fr)} }
+.dosya{border-radius:16px;overflow:hidden;min-width:0}
+.dosya .bas{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--cizgi);font-family:var(--es);font-size:12px;color:var(--soluk)}
+.dosya .bas i{width:9px;height:9px;border-radius:50%;background:var(--cizgi2)}
+.dosya pre{margin:0;padding:16px 18px;font-family:var(--es);font-size:12.8px;line-height:1.65;color:var(--metin);overflow-x:auto;background:rgba(4,16,36,.38)}
+.dosya .a{color:var(--silik)} .dosya .h{color:var(--gunes)} .dosya .y{color:var(--vurgu)} .dosya .s{color:var(--iyi)}
+.ilkeler{list-style:none;margin:0;padding:6px 22px;display:grid}
+.ilkeler li{padding:14px 0;border-bottom:1px solid var(--cizgi);display:grid;gap:3px}
+.ilkeler li:last-child{border-bottom:0}
+.ilkeler b{font-weight:600}
+.ilkeler span{color:var(--soluk);font-size:14.5px}
+.tablo-kap{overflow-x:auto;margin-top:22px;border-radius:16px}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:620px}
+th,td{text-align:left;padding:12px 16px;border-bottom:1px solid var(--cizgi);vertical-align:top}
+th{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--silik);font-weight:600}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600;white-space:nowrap}
+td .es{font-size:12.5px;color:var(--soluk)}
+.durum{font-family:var(--es);font-size:11.5px;padding:2px 8px;border-radius:6px;border:1px solid var(--cizgi2);white-space:nowrap;color:var(--soluk)}
+.durum.kapali{border-color:rgba(95,211,160,.5);color:var(--iyi)}
+.durum.onay{border-color:rgba(242,193,78,.55);color:var(--gunes)}
+.dipnot{font-size:13.5px;color:var(--silik);max-width:80ch;margin:14px 4px 0}
+
+/* kurulum */
+.kurulum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:8px}
+@media (max-width:980px){ .kurulum{grid-template-columns:minmax(0,1fr)} }
+.yol{padding:22px;border-radius:18px;display:grid;gap:12px;align-content:start;min-width:0}
+.yol .ne{font-family:var(--es);font-size:11px;letter-spacing:.14em;color:var(--gunes)}
+.yol ol{margin:0;padding-left:20px;color:var(--soluk);font-size:14.5px;display:grid;gap:6px}
+.yol ol b{color:var(--metin);font-weight:600}
+.yol p{margin:0;color:var(--soluk);font-size:14.5px}
+.komut{display:flex;align-items:stretch;gap:0;border:1px solid var(--cizgi2);border-radius:var(--r-ic);background:rgba(4,16,36,.45);min-width:0}
+.komut code{flex:1;min-width:0;padding:10px 12px;font-size:12.5px;color:var(--metin);overflow-x:auto;white-space:nowrap}
+.komut button{border:0;border-left:1px solid var(--cizgi2);background:transparent;color:var(--soluk);font:600 12px var(--yazi);padding:0 12px;cursor:pointer;border-radius:0 var(--r-ic) var(--r-ic) 0}
+.komut button:hover{color:var(--metin);background:var(--cip)}
+.yol .alt{margin-top:auto}
+
+/* kapanış */
+.kapanis{margin-top:clamp(56px,9vw,104px);padding:clamp(28px,5vw,52px);border-radius:28px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:clamp(18px,3vw,36px);align-items:center}
+.kapanis svg.gunes{width:76px;height:76px;filter:drop-shadow(0 0 18px rgba(255,217,130,.55))}
+.kapanis h2{margin:0 0 6px}
+.kapanis p{margin:0;color:var(--soluk)}
+.kapanis .eylem{justify-content:flex-end}
+@media (max-width:820px){ .kapanis{grid-template-columns:minmax(0,1fr)} .kapanis .eylem{justify-content:flex-start} }
+footer{padding-block:28px 40px;display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:space-between;font-size:13px;color:var(--silik)}
+footer a{color:var(--soluk)}
+.dil{flex:none;font:600 12px/1 var(--es);letter-spacing:.08em;color:var(--soluk);text-decoration:none;padding:9px 10px;border-radius:var(--r-dugme);border:1px solid var(--cizgi)}
+.dil:hover{color:var(--metin);background:var(--cip)}
+</style>
+</head>
+<body>
+<canvas id="gok" aria-hidden="true"></canvas>
+<div id="perde" aria-hidden="true"></div>
+
+<div class="sayfa" lang="en">
+<div class="ic">
+
+<header class="cubuk cam">
+  <a class="logo" href="#ust" aria-label="Kut, top of page"><svg class="isaret" viewBox="0 0 64 64" data-renk="#F2C14E" aria-hidden="true"></svg><span>KUT</span></a>
+  <nav class="menu" aria-label="On this page">
+    <a href="#neler-yapar">Features</a>
+    <a href="#gizlilik">Privacy</a>
+    <a href="#kurulum">Install</a>
+  </nav>
+  <a class="dil" href="../" hreflang="tr" lang="tr" title="Türkçe">TR</a>
+  <button type="button" class="tema-dugme" id="b-tema" aria-label="Night theme" title="Night theme"></button>
+  <a class="dugme pusula" href="https://github.com/koraykutlu/kut" target="_blank" rel="noopener">
+    <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+    GitHub
+  </a>
+</header>
+
+<main id="ust">
+
+<div class="giris">
+  <div class="amblem" id="amblem"><svg class="isaret" viewBox="0 0 64 64" data-renk="#FFD982" aria-hidden="true"></svg><b>KUT</b></div>
+  <h1>Your personal network, only on your computer.</h1>
+  <div class="ozet cam">
+    <p>See the people you know on a map with their photos. Jot one line after every conversation. Let Kut remember who you have been neglecting, what you promised to whom, and who you should write to this week. No account, no cloud: your data stays on your disk as plain Markdown files.</p>
+    <div class="eylem">
+      <a class="dugme dolu" href="https://github.com/koraykutlu/kut" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        Open on GitHub
+      </a>
+      <a class="dugme" href="https://github.com/koraykutlu/kut/releases/latest" target="_blank" rel="noopener">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3v10m0 0l-4-4m4 4l4-4M4 16h12"/></svg>
+        Download Kut.exe
+      </a>
+    </div>
+    <div class="kunye"><span>v1.3.1</span><span>MIT license</span><span>Windows · macOS · Linux</span><span>no dependencies</span><span>interface in Turkish (English planned)</span></div>
+  </div>
+
+  <figure class="vitrin cerceve cam">
+    <img src="../img/kut-demo.gif" width="720" height="463" alt="Kut interface: a network map over a cloudy sky, a contact card, the This week list and the Compass window.">
+    <figcaption>Map, contact card, This week and Compass (Pusula). Everyone in the screenshots is fictional; the person in the center is “Deniz Demo” from the demo data.</figcaption>
+  </figure>
+</div>
+
+<section id="neler-yapar" aria-labelledby="b-neler">
+  <p class="etiket">Features</p>
+  <h2 id="b-neler">A calm way to keep up with the people in your life</h2>
+  <p class="giris-metni">Professors, friends, mentors, colleagues: all on one map, each in their own file. You write, Kut reminds.</p>
+
+  <div class="ozellik">
+    <div class="metin cam">
+      <p class="etiket">Network map</p>
+      <h3>You in the center, the people you know around you</h3>
+      <p>Color shows the type of contact, the ring shows how close they are. Links are drawn as friendship, mentorship, business partnership, family, rivalry or tension. The <b>Watch out</b> list flags possible conflicts of interest from those links.</p>
+      <div class="turler" aria-label="Contact types">
+        <span class="tur" style="--r:var(--t-akademi)"><i></i>academia</span>
+        <span class="tur" style="--r:var(--t-is)"><i></i>work</span>
+        <span class="tur" style="--r:var(--t-yakin)"><i></i>close</span>
+        <span class="tur" style="--r:#F2A98A"><i></i>circle</span>
+        <span class="tur" style="--r:var(--t-etkinlik)"><i></i>events</span>
+        <span class="tur" style="--r:var(--t-finans)"><i></i>finance</span>
+        <span class="tur" style="--r:#C9A0E8"><i></i>politics</span>
+      </div>
+    </div>
+    <figure class="cerceve cam" style="margin:0"><img src="../img/harita.png" width="1400" height="900" loading="lazy" alt="Network map: Deniz Demo in the center, colored square nodes around with link lines between them; Compass and Assistant asks on the left, network breakdown on the right."></figure>
+  </div>
+
+  <div class="ozellik ters">
+    <div class="metin cam">
+      <p class="etiket">Contact card and contact rhythm</p>
+      <h3>Kut tells you who you are neglecting</h3>
+      <p>After a conversation you add a one-line <b>contact</b> note. Kut looks at the last contact and closeness and works out a neglect threshold:</p>
+      <div class="esik" role="table" aria-label="Neglect threshold by closeness">
+        <span role="cell">closeness 3</span><div class="bar" aria-hidden="true"><i style="width:23%"></i></div><b role="cell">14 days</b>
+        <span role="cell">closeness 2</span><div class="bar" aria-hidden="true"><i style="width:50%"></i></div><b role="cell">30 days</b>
+        <span role="cell">closeness 1</span><div class="bar" aria-hidden="true"><i style="width:100%"></i></div><b role="cell">60 days</b>
+      </div>
+      <p class="puanlar">Six relationship scores are computed from your records: warmth, depth, reciprocity, continuity, bridging and common ground. The “How are scores calculated?” panel shows the exact criteria.</p>
+    </div>
+    <figure class="cerceve cam" style="margin:0"><img src="../img/kisi-karti.png" width="1400" height="900" loading="lazy" alt="Contact card: profile, tags, relationship scores and next step."></figure>
+  </div>
+
+  <div class="ozellik">
+    <div class="metin cam">
+      <p class="etiket">Promises</p>
+      <h3>Promises you made, and were made to you, are not forgotten</h3>
+      <p>“I'll send the book”, “she'll forward the internship posting”. Each promise sits on the contact's card with its direction and due date. Just type a plain sentence into Ask Kut:</p>
+      <div class="balon"><span class="kim">Kut</span><span class="soru">Add this as a promise to Selin? (due: 16.10)</span></div>
+      <p>Nothing is written until you confirm. The promise stays in the contact file as a readable line (the file format is Turkish):</p>
+      <div class="satir-es"><span class="k">- [ ]</span> 2026-10-13 · <span class="y">ben → o</span> · kitabı göndermek <span class="k">(son: 2026-10-17)</span></div>
+    </div>
+    <figure class="cerceve cam" style="margin:0"><img src="../img/kisi-sozler.png" width="1400" height="900" loading="lazy" alt="Promises tab on a contact card: three open promises, one marked a day overdue."></figure>
+  </div>
+
+  <div class="ozellik ters">
+    <div class="metin cam">
+      <p class="etiket">This week and Compass</p>
+      <h3>Who to write to, and why now</h3>
+      <p>The <b>This week</b> list brings together steps that are due, relationships going cold and overdue promises; one click highlights only them on the map.</p>
+      <p>You write your goals into <b>Compass</b> (Pusula). If you want, an AI reads your goals and your network and suggests moves, each tied to its evidence: who, why now, and what the first step is.</p>
+      <div class="cipler"><span class="cip">Done</span><span class="cip">Not done</span><span class="cip yesil">Worked</span><span class="cip">Did not work</span><span class="cip kirmizi">Invalid / wrong</span></div>
+    </div>
+    <figure class="cerceve cam" style="margin:0"><img src="../img/pusula-hamleler.png" width="1400" height="900" loading="lazy" alt="Compass window: goal status and suggested moves ranked by confidence."></figure>
+  </div>
+
+  <div class="izgara">
+    <article class="kart cam">
+      <div class="ust"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="7.5"/><path d="M10 6.5v4M10 13.5v.01"/></svg><h3>The assistant asks</h3></div>
+      <p>The AI's inferences about people are never written to a file until you approve them. For each one you say Right, Fix or Wrong; what you say always wins.</p>
+    </article>
+    <article class="kart cam">
+      <div class="ust"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3v9m0 0l-3.5-3.5M10 12l3.5-3.5M3.5 14v2.5h13V14"/></svg><h3>Import</h3></div>
+      <p>WhatsApp chats, contacts (.vcf), calendar (.ics), LinkedIn export (CSV) and course lists. You see a preview first; it is written only if you approve. Message content is not kept: only who, when and which channel.</p>
+    </article>
+    <article class="kart cam">
+      <div class="ust"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5h12v8H9l-3.5 3v-3H4z"/></svg><h3>Ask Kut</h3></div>
+      <p>Splits a plain sentence like “Talked to Professor Selin today, my application was approved” into a contact note, a statement and a next step. Before every write, the previous version of the contact is copied to an archive.</p>
+    </article>
+    <article class="kart cam">
+      <div class="ust"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><rect x="7.5" y="2.5" width="5" height="9" rx="2.5"/><path d="M4.5 9.5a5.5 5.5 0 0011 0M10 15v2.5"/></svg><h3>Local voice</h3></div>
+      <p>Take notes by speaking if you like: Whisper transcribes, EMA Lightning reads answers aloud (Turkish voice). Everything runs on this computer, and audio is never written to disk.</p>
+    </article>
+    <article class="kart cam">
+      <div class="ust"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5L10 4l7.5 3.5L10 11z"/><path d="M5.5 9v4c1.2 1.3 2.7 2 4.5 2s3.3-.7 4.5-2V9"/></svg><h3>School adapter</h3></div>
+      <p>Write “I'm taking ISE 424 and MATH 101 this term”; if your school is selected, Kut fills in instructors and class times from public pages, with sources. Off when no school is selected; adapters currently cover Turkish universities.</p>
+    </article>
+    <article class="kart cam">
+      <div class="ust"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="9" width="12" height="8.5" rx="2"/><path d="M6.8 9V6.5a3.2 3.2 0 016.4 0V9"/></svg><h3>PIN lock</h3></div>
+      <p>Kut asks for a PIN at startup. The lock is server-side: while locked, no personal data is served. Kut locks itself after a period of inactivity.</p>
+    </article>
+  </div>
+
+  <div class="ozellik" style="margin-top:40px">
+    <div class="metin cam">
+      <p class="etiket">Try a demo first</p>
+      <h3>Deniz's Tuesday</h3>
+      <p>Before entering your own data, press <b>Önce bir örnekle göster</b> (show me an example first) in the first-run wizard. Six scenes play out on a fictional network: Compass spotting a relationship gone cold, a promise being captured, a relationship warming up again.</p>
+      <p>The demo runs in a separate temporary folder, never touches your data and makes no network or model calls. It is deleted when you close it.</p>
+    </div>
+    <figure class="cerceve cam" style="margin:0"><img src="../img/demo-sali-isinma.png" width="1400" height="900" loading="lazy" alt="In-app demo: a scene showing a relationship warming up again."></figure>
+  </div>
+</section>
+
+<section id="gizlilik" aria-labelledby="b-gizlilik">
+  <p class="etiket">Privacy</p>
+  <h2 id="b-gizlilik">Your data on your disk, in a format you can read</h2>
+  <p class="giris-metni">Every contact is a Markdown file. Open it in any editor, back it up, delete it. Kut runs a server, but it only listens on your own computer at <code>127.0.0.1</code>.</p>
+
+  <div class="gizlilik">
+    <figure class="dosya cam" style="margin:0">
+      <div class="bas"><i></i><i></i><i></i><span>kisiler/aylin-masalci.md</span></div>
+<pre><span class="a">---</span>
+<span class="a">ad:</span> Aylin Masalcı
+<span class="a">tur:</span> akademi
+<span class="a">kurum:</span> Kuzeyova Üniversitesi
+<span class="a">rol:</span> Doçent, Bilgisayar Mühendisliği
+<span class="a">yakinlik:</span> <span class="y">3</span>
+<span class="a">son_temas:</span> <span class="y">2026-09-22</span>
+<span class="a">sonraki_adim:</span> Panonun ilk sürümünü göstermek
+<span class="a">neden_onemli:</span> Projemin akademik danışmanı.
+<span class="a">ne_verebilirim:</span> Öğrencileri için veri seti ve geri bildirim.
+<span class="a">---</span>
+<span class="h"># Aylin Masalcı</span>
+
+<span class="h">## Temas</span>
+- 26.08.2026 · e-posta · Açık veri panosu fikrini anlattım, kaynak önerdi.
+- 22.09.2026 · mesaj · Seminer davetini iletti.
+
+<span class="h">## Sözler</span>
+- [ ] 2026-10-13 · <span class="s">o → ben</span> · okuma listesini e-postayla göndermek (son: 2026-10-12)</pre>
+      <figcaption style="padding:10px 16px 14px">A fictional demo contact. This is the whole file: field names and headings are in Turkish (ad = name, tur = type, yakinlik = closeness, Temas = contacts, Sözler = promises).</figcaption>
+    </figure>
+
+    <ul class="ilkeler cam" style="border-radius:16px">
+      <li><b>No account, no cloud, no telemetry.</b><span>No sync and no mobile app either. The server stops by itself about 20 minutes after you close the page.</span></li>
+      <li><b>No internet access unless you turn it on.</b><span>On a fresh install no external source is enabled. You enable each one yourself in Settings → Sources.</span></li>
+      <li><b>AI is optional.</b><span>Claude Code (recommended), Codex, Gemini or local Ollama. Kut never asks for or stores an API key; everything works without AI too.</span></li>
+      <li><b>Every record sent to a model passes a local gate first.</b><span>A contact you mark “never send to AI” never leaves. Keys, tokens and passwords are masked before anything is sent.</span></li>
+    </ul>
+  </div>
+
+  <div class="tablo-kap cam">
+    <table>
+      <thead><tr><th scope="col">Network path</th><th scope="col">Where to</th><th scope="col">When</th></tr></thead>
+      <tbody>
+        <tr><td>Update check</td><td><span class="es">api.github.com</span>, version info only; no data is sent</td><td><span class="durum onay">asks on first run</span></td></tr>
+        <tr><td>Voice setup</td><td><span class="es">PyPI</span>, <span class="es">Hugging Face</span>; pinned versions</td><td><span class="durum onay">only if you say “Yes”</span></td></tr>
+        <tr><td>School websites</td><td>public pages of the school you select</td><td><span class="durum onay">when you click “Fill from source”</span></td></tr>
+        <tr><td>Vekilpedia, events, OpenAlex/ORCID</td><td>public pages, no login</td><td><span class="durum kapali">off by default</span></td></tr>
+        <tr><td>Remote model</td><td>Anthropic, OpenAI or Google; Ollama never leaves your computer</td><td><span class="durum onay">only when you use it</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="dipnot">There is no path that is not on this list. Two notes: if you have an approved active goal, the strategy reading refreshes once a week on its own (can be turned off in settings). Because Codex and Gemini can read files on disk with their own tools, Kut asks for extra confirmation when you select them; for a sensitive network, Claude Code or local Ollama is the safer choice. Details in the Privacy section of the README.</p>
+</section>
+
+<section id="kurulum" aria-labelledby="b-kurulum">
+  <p class="etiket">Install</p>
+  <h2 id="b-kurulum">Pick one of three ways, a few minutes</h2>
+  <p class="giris-metni">On first run you set a PIN; then a short wizard asks for your name and AI choice. Every step can be skipped.</p>
+
+  <div class="kurulum">
+    <div class="yol cam">
+      <span class="ne">WINDOWS · KUT.EXE</span>
+      <h3>No Python needed</h3>
+      <ol>
+        <li>Download <b>Kut.exe</b> from GitHub Releases and double-click it.</li>
+        <li>If Windows says “unknown publisher”: <b>More info → Run anyway</b>. The file is unsigned; you can verify it with the <code>Kut.exe.sha256</code> next to it.</li>
+        <li>Your data lives in <code>Documents\Kut</code>.</li>
+      </ol>
+      <a class="dugme dolu alt" href="https://github.com/koraykutlu/kut/releases/latest" target="_blank" rel="noopener">Go to latest release</a>
+    </div>
+
+    <div class="yol cam">
+      <span class="ne">PYTHON 3 · ANY OS</span>
+      <h3>Run from source</h3>
+      <p>Standard library only; nothing to install.</p>
+      <div class="komut"><code id="k-klon">git clone https://github.com/koraykutlu/kut</code><button type="button" data-kopya="k-klon">Copy</button></div>
+      <div class="komut"><code id="k-calis">py -3 kut.pyw</code><button type="button" data-kopya="k-calis">Copy</button></div>
+      <p>On macOS and Linux: <code>python3 kut.pyw</code>. Your browser opens at <code>127.0.0.1:47318</code>.</p>
+    </div>
+
+    <div class="yol cam">
+      <span class="ne">WITH AN AI AGENT</span>
+      <h3>Let your agent install it</h3>
+      <p>If you use Claude Code, Codex or a similar agent, just tell it:</p>
+      <div class="komut"><code id="k-ajan">Install Kut from https://github.com/koraykutlu/kut</code><button type="button" data-kopya="k-ajan">Copy</button></div>
+      <p>The agent follows the install instructions in the repo, keeps your personal data in a folder outside the repo, and never enables external sources without your approval.</p>
+    </div>
+  </div>
+  <p class="dipnot">Updates happen inside the app: a new version is not installed until its SHA-256 is verified, the previous version is kept for rollback, and your data folder is never touched.</p>
+</section>
+
+<div class="kapanis cam">
+  <svg class="gunes isaret" viewBox="0 0 64 64" data-renk="#F2C14E" aria-hidden="true"></svg>
+  <div>
+    <h2>Open source</h2>
+    <p>Kut is MIT licensed. Read the code, build it yourself, report a bug or contribute.</p>
+  </div>
+  <div class="eylem">
+    <a class="dugme dolu" href="https://github.com/koraykutlu/kut" target="_blank" rel="noopener">koraykutlu/kut</a>
+    <a class="dugme" href="https://github.com/koraykutlu/kut/issues" target="_blank" rel="noopener">Report an issue</a>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  <span>Kut · <a href="https://github.com/koraykutlu" target="_blank" rel="noopener">koraykutlu</a> · MIT</span>
+  <span>All people and organizations in the screenshots are fictional.</span>
+</footer>
+
+</div>
+</div>
+
+<script>
+// Gündüz/gece ziyaretçinin saatine göre (07:00–19:00 gündüz). Düğmeyle seçilen tema yalnız bu oturumda geçerli.
+var IKON = {
+  ay: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 12.2A6.8 6.8 0 017.8 3.5a6.8 6.8 0 108.7 8.7z"/></svg>',
+  gunes: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="3.4"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.3 4.3l1.4 1.4M14.3 14.3l1.4 1.4M4.3 15.7l1.4-1.4M14.3 5.7l1.4-1.4"/></svg>'
+};
+function temaAyarla(t, kaydet) {
+  t = t === "gece" ? "gece" : "gunduz";
+  document.documentElement.dataset.tema = t;
+  var b = document.getElementById("b-tema"), et = t === "gece" ? "Day theme" : "Night theme";
+  b.innerHTML = t === "gece" ? IKON.gunes : IKON.ay; b.title = et; b.setAttribute("aria-label", et);
+  if (kaydet) try { sessionStorage.setItem("kut-tema", t); } catch (e) {}
+}
+function saatTemasi() { var h = new Date().getHours(); return h >= 7 && h < 19 ? "gunduz" : "gece"; }
+function elleSecilen() { try { return sessionStorage.getItem("kut-tema"); } catch (e) { return null; } }
+temaAyarla(elleSecilen() || saatTemasi());
+setInterval(function () {   // sayfa açıkken 07:00 ya da 19:00 geçilirse gök kendiliğinden döner
+  if (!elleSecilen() && document.documentElement.dataset.tema !== saatTemasi()) temaAyarla(saatTemasi());
+}, 60000);
+document.getElementById("b-tema").addEventListener("click", function () {
+  temaAyarla(document.documentElement.dataset.tema === "gece" ? "gunduz" : "gece", true);
+});
+
+// Kut'un güneş işareti: uygulamadaki kunIsareti() ile aynı çizim (8 ışın, halka, merkez).
+document.querySelectorAll("svg.isaret").forEach(function (el) {
+  var renk = el.dataset.renk || "#F2C14E", s = "";
+  function n(r, x) { return (32 + Math.cos(x) * r).toFixed(2) + " " + (32 + Math.sin(x) * r).toFixed(2); }
+  for (var i = 0; i < 8; i++) {
+    var a = i / 8 * Math.PI * 2 - Math.PI / 2;
+    s += '<path d="M' + n(12, a - Math.PI / 8) + " L" + n(29, a) + " L" + n(12, a + Math.PI / 8) + 'Z" fill="' + renk + '"/>';
+  }
+  el.innerHTML = s + '<circle cx="32" cy="32" r="9" fill="none" stroke="' + renk + '" stroke-width="3"/><circle cx="32" cy="32" r="3" fill="' + renk + '"/>';
+});
+
+// Kopyala düğmeleri
+document.querySelectorAll("[data-kopya]").forEach(function (b) {
+  b.addEventListener("click", function () {
+    var el = document.getElementById(b.dataset.kopya), metin = el.textContent;
+    function sec() { var r = document.createRange(); r.selectNodeContents(el); var s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = "Selected"; }
+    try {
+      navigator.clipboard.writeText(metin).then(function () { b.textContent = "Copied"; }, sec);
+    } catch (e) { sec(); }
+    setTimeout(function () { b.textContent = "Copy"; }, 1800);
+  });
+});
+
+// Boyalı gök: Kut arayüzündeki shader (alan bükmeli fbm + güneşe göre ışık + fırça dokusu).
+// Gündüz/gece sistem temasından; güneş giriş amblemini izler; aşağı kaydırdıkça gök kararır.
+(function () {
+  var TEMA = {
+    gunduz: { ust: [.03, .14, .36], ufuk: [.36, .6, .88], isik: [1, .97, .92], golge: [.38, .48, .66], gunes: [1, .85, .55], kapsama: .5 },
+    gece: { ust: [.012, .04, .1], ufuk: [.1, .19, .33], isik: [.6, .68, .82], golge: [.08, .13, .23], gunes: [.95, .76, .4], kapsama: .52 }
+  };
+  var FS = "precision highp float;\n" +
+    "uniform vec2 R; uniform float T, S, D, K; uniform vec2 G;\n" +
+    "uniform vec3 cUst, cUfuk, cIsik, cGolge, cGunes;\n" +
+    "float h(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}\n" +
+    "float n(vec2 p){vec2 i=floor(p),f=fract(p);vec2 u=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),u.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),u.x),u.y);}\n" +
+    "const mat2 M=mat2(1.6,1.2,-1.2,1.6);\n" +
+    "float fbm(vec2 p){float a=.5,s=0.;for(int i=0;i<6;i++){s+=a*n(p);p=M*p;a*=.5;}return s;}\n" +
+    "float yog(vec2 p){vec2 q=vec2(fbm(p*.6+vec2(T*.012,0.)),fbm(p*.6+vec2(3.1,7.7)));" +
+    "float yakin=fbm(p*vec2(.85,1.45)+.85*q+vec2(T*.01,0.));float uzak=fbm(p*vec2(1.7,2.6)+vec2(11.3,-T*.006)+.5*q);return max(yakin,uzak*.93);}\n" +
+    "void main(){vec2 uv=gl_FragCoord.xy/R;float a=R.x/R.y;vec2 p=vec2(uv.x*a,uv.y)*2.2,g=vec2(G.x*a,G.y)*2.2;float dg=length(p-g);" +
+    "float profil=mix(1.3,.72,smoothstep(0.,.95,uv.y));float acik=1.-.45*exp(-dg*dg*1.4);float d=yog(p)*profil*acik;" +
+    "vec2 L=normalize(mix(vec2(0.,1.),normalize(g-p+1e-4),.65));float d2=yog(p+L*.07)*profil*acik;float isik=clamp((d-d2)*8.+.5,0.,1.);" +
+    "float c=pow(smoothstep(K,K+.26,d),.85);vec3 gok=mix(cUfuk,cUst,pow(uv.y,.7));gok+=cGunes*S*(.55*exp(-dg*2.4)+.2*exp(-dg*.7));" +
+    "vec3 bulut=mix(cGolge,cIsik,smoothstep(.05,.95,isik));bulut*=mix(1.,.8,smoothstep(K+.1,K+.45,d));bulut*=mix(.92,1.,smoothstep(0.,.7,uv.y));" +
+    "bulut=mix(bulut,bulut*vec3(1.03,1.,.95),n(p*1.8+7.));bulut+=cGunes*S*(.5*pow(isik,2.2)*exp(-dg*.8)+.3*exp(-dg*1.6)*(1.-c));vec3 col=mix(gok,bulut,c);" +
+    "float aci=n(p*.9+3.)*3.14;vec2 yon=vec2(cos(aci),sin(aci));" +
+    "float firca=n(vec2(dot(p,yon)*24.,dot(p,vec2(-yon.y,yon.x))*3.))+.35*n(vec2(dot(p,yon)*70.,dot(p,vec2(-yon.y,yon.x))*8.));" +
+    "col*=.975+(.03+.09*c)*(firca-.75);col+=(h(floor(gl_FragCoord.xy))-.5)*.035;col*=1.-.32*pow(length(uv-vec2(.5,.55))*1.25,2.2);" +
+    "col=mix(col,cUst*.75,D);gl_FragColor=vec4(col,1.);}";
+
+  var cv = document.getElementById("gok"), gl = null;
+  try { gl = cv.getContext("webgl", { antialias: false }); } catch (e) {}
+  if (!gl) return;
+  function sh(tip, src) { var s = gl.createShader(tip); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; }
+  var p = gl.createProgram();
+  try {
+    gl.attachShader(p, sh(gl.VERTEX_SHADER, "attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}"));
+    gl.attachShader(p, sh(gl.FRAGMENT_SHADER, FS));
+  } catch (e) { return; }
+  gl.linkProgram(p); gl.useProgram(p);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  var U = {};
+  ["R", "T", "S", "D", "K", "G", "cUst", "cUfuk", "cIsik", "cGolge", "cGunes"].forEach(function (k) { U[k] = gl.getUniformLocation(p, k); });
+
+  var olcek = Math.min(.6, 900 / Math.max(innerWidth, 1));
+  function boyut() { olcek = Math.min(.6, 1100 / Math.max(innerWidth, 1)); cv.width = Math.max(2, Math.round(innerWidth * olcek)); cv.height = Math.max(2, Math.round(innerHeight * olcek)); gl.viewport(0, 0, cv.width, cv.height); }
+  boyut(); addEventListener("resize", boyut);
+
+  var mqAz = matchMedia("(prefers-reduced-motion: reduce)");
+  function temaAdi() { return document.documentElement.dataset.tema === "gece" ? "gece" : "gunduz"; }
+  var hedef = TEMA[temaAdi()], tema = JSON.parse(JSON.stringify(hedef));
+  function guncelTema() { hedef = TEMA[temaAdi()]; }
+  new MutationObserver(guncelTema).observe(document.documentElement, { attributes: true, attributeFilter: ["data-tema"] });
+
+  var amblem = document.getElementById("amblem"), t0 = performance.now(), son = 0, S = 0, gx = .2, gy = .8;
+  function kar(a, b) { return a.map(function (x, i) { return x + (b[i] - x) * .14; }); }
+  function ciz(simdi) {
+    requestAnimationFrame(ciz);
+    if (document.hidden || simdi - son < 45) return;
+    son = simdi;
+    ["ust", "ufuk", "isik", "golge", "gunes"].forEach(function (k) { tema[k] = kar(tema[k], hedef[k]); });
+    tema.kapsama += (hedef.kapsama - tema.kapsama) * .14;
+    // güneş amblemin arkasında doğar
+    S += ((mqAz.matches ? .9 : 1) - S) * .04;
+    var r = amblem.getBoundingClientRect(), svg = amblem.firstElementChild.getBoundingClientRect();
+    var hx = (svg.left + svg.width / 2) / innerWidth, hy = 1 - (svg.top + svg.height / 2) / innerHeight;
+    gx += (hx - gx) * .25; gy += (hy - gy) * .25;
+    // kaydırdıkça gök kararır, cam okunur kalır
+    var dMax = temaAdi() === "gece" ? .62 : .38;
+    var D = Math.min(1, Math.max(0, (scrollY - innerHeight * .25) / (innerHeight * 1.4))) * dMax + .04;
+    gl.uniform2f(U.R, cv.width, cv.height);
+    gl.uniform1f(U.T, mqAz.matches ? 0 : (simdi - t0) / 1000);
+    gl.uniform1f(U.S, S); gl.uniform1f(U.D, D); gl.uniform1f(U.K, tema.kapsama); gl.uniform2f(U.G, gx, gy);
+    gl.uniform3fv(U.cUst, tema.ust); gl.uniform3fv(U.cUfuk, tema.ufuk); gl.uniform3fv(U.cIsik, tema.isik); gl.uniform3fv(U.cGolge, tema.golge); gl.uniform3fv(U.cGunes, tema.gunes);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+  requestAnimationFrame(ciz);
+})();
+</script>
+</body>
+</html>

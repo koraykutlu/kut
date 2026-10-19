@@ -1,7 +1,7 @@
 """Kut sürümü ve sürüm karşılaştırma (anlamsal sürüm: X.Y.Z). Yayın etiketi `vX.Y.Z`; burası ile etiket aynı olmalı."""
 import re
 
-SURUM = "1.3.0"
+SURUM = "1.3.1"
 _DESEN = re.compile(r"^v?(\d{1,6})\.(\d{1,6})\.(\d{1,6})$")
 
 

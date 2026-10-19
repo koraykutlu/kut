@@ -539,7 +539,8 @@ def iliski_puanlari(k, komsu_cevreleri, ilgiler, bugun=None):
 
 
 def surum_al(kid, sakla=20):
-    """Kişi dosyasının yazılmadan önceki halini arsiv/surum/'e kopyalar (son `sakla` kopya kalır); elle geri almak için."""
+    """Kişi dosyasının yazılmadan önceki halini arsiv/surum/'e kopyalar (son `sakla` kopya kalır); elle geri almak için.
+    Kopyaya `visibility: private` eklenir (_ozel_yap); elle geri alırken bu satırı sil, yoksa kişi beynin bağlamından düşer."""
     yol = os.path.join(KISILER, kid + ".md")
     if not os.path.exists(yol):
         return ""

@@ -1,6 +1,6 @@
 """Kut strateji okuması: hedefler + ağ + keşif (vekiller, etkinlikler) + ikinci beyin → güçlü modelle "görmediğin hamleler".
 
-Model: seçili sağlayıcı (ag_model; varsayılan Claude Code, ayarlar.json → strateji_modeli, varsayılan claude-opus-5-5); kişi dosyalarını yalnız okuyabilir
+Model: seçili sağlayıcı (ag_model; varsayılan Claude Code, ayarlar.json → strateji_modeli, varsayılan opus); kişi dosyalarını yalnız okuyabilir
 (Claude salt-okur araçlarla, diğer sağlayıcılar kapıdan geçmiş kopyanın metniyle).
 Her hamle bir hedefe bağlı ve kanıtlıdır (kişi id, vekil önergesi, etkinlik adresi, kasa işi); kanıtsız hamle elenir.
 Sonuç <veri>/strateji/<tarih-saat>.md: okunur Markdown + sonda makine için JSON bloğu. Kullanıcı her hamleyi

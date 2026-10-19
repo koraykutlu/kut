@@ -72,7 +72,7 @@ class SurumTest(unittest.TestCase):
                 sv.ayristir(kotu)
 
     def test_surum_sabiti(self):
-        self.assertEqual(sv.SURUM, "1.3.0")
+        self.assertEqual(sv.SURUM, "1.3.1")
         sv.ayristir(sv.SURUM)
 
 
@@ -194,7 +194,7 @@ class ExeUygulamaTest(Temel):
         self.degistir.assert_called_once_with(*[self.yollar[0], self.yollar[1], self.yollar[2]])
         self.kapat.assert_called_once()
         self.assertTrue(os.path.isfile(self.yollar[1]))
-        self.assertEqual(ia.ayarlar()["guncelleme"]["onceki"]["surum"], "1.3.0")
+        self.assertEqual(ia.ayarlar()["guncelleme"]["onceki"]["surum"], "1.3.1")
 
     def test_sums_dosyasindan_dogrulama(self):
         if os.name != "nt":
@@ -462,7 +462,7 @@ class GuncellemeApiTest(unittest.TestCase):
         kod, _, g = self.istek("GET", "/api/guncelleme", None, a)
         self.assertEqual(kod, 200)
         d = json.loads(g)
-        self.assertEqual(d["surum"], "1.3.0")
+        self.assertEqual(d["surum"], "1.3.1")
         self.assertTrue(d["sorulmadi"])
         self.assertIsNone(d["otomatik"])
         self.assertFalse(os.path.exists(self.ayar) and "guncelleme" in open(self.ayar, encoding="utf-8").read())   # sormadan hiçbir şey yazılmadı
