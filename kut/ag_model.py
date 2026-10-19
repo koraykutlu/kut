@@ -324,6 +324,19 @@ def _json_nesne(metin):
     return None
 
 
+DIL_YONERGESI = ("Arayüz dili İngilizce: kullanıcıya yazdığın her cevabı, özeti, soruyu ve öneriyi İngilizce yaz. JSON anahtarlarını, "
+                 "kişi dosyası alan adlarını ve Markdown bölüm başlıklarını (## Temas, ## Sözler, ## Senin beyanların …) değiştirme; "
+                 "kişi notlarına yazılacak değerlerde notların mevcut dilini koru.")
+
+
+def dil_yonergesi(sistem):
+    """Arayüz İngilizceyse sistem istemine cevap dili yönergesi eklenir; Türkçede istem birebir aynı kalır (ag_dil)."""
+    import ag_dil
+    if ag_dil.etkin() != "en":
+        return sistem
+    return (sistem + "\n\n" if sistem else "") + DIL_YONERGESI
+
+
 def cagir(gorev, istem, *, sistem="", zaman_asimi=240, json_cikti=False, oturum="", oturum_kalici=False,
           okuma_klasoru=None, veri_klasoru=None, cwd=None, yer="istem"):
     """Seçili sağlayıcıyla tek model çağrısı → Cevap(metin, oturum).
@@ -344,6 +357,7 @@ def cagir(gorev, istem, *, sistem="", zaman_asimi=240, json_cikti=False, oturum=
         raise RuntimeError("model adı geçersiz: ayarlardaki model adını düzelt")
     if not isinstance(oturum, str):
         oturum = ""
+    sistem = dil_yonergesi(sistem)
     cwd = cwd or os.getcwd()
     os.makedirs(cwd, exist_ok=True)
     if sag == "claude":

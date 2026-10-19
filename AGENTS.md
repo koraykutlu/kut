@@ -161,6 +161,13 @@ Hepsi yerel ve deterministiktir: model ve ağ yok (README "Ağa çıkabilen yoll
 eklemek ayrı bir tasarım kararıdır (onay akışı olmadan ekleme). Her araç çıktısı `Kapi` ile süzülür (kapalı/hariç kişi listelenmez, anıldığı satır atılır, sır süzgeci);
 telefon ve e-posta dönmez. stdout yalnız protokoldür, başka çıktı stderr'e. Yeni araç = `ARACLAR` + `ISLEV` + `tests/test_mcp.py`. README "Ağa çıkabilen yollar"da satırı var.
 
+## Arayüz dili (`ag_dil.py`, `kut/dil_en.json`)
+Türkçe varsayılan ve kaynaktır; İngilizce isteğe bağlıdır (⚙ Ayarlar → *Dil · Language*, `ayarlar.json` → `dil`, tarayıcıda `kut_dil` çerezi; uç `POST /api/dil`, kilit + anahtar + yerel Origin).
+Kod Türkçe metin üretmeye devam eder; İngilizcede sayfa sözlüğü taşır ve ekrana gelen metni çevirir (`ag_sablon.html` "Dil" bölümü: metin düğümü, satır içi biçimli öğe, title/placeholder/aria-label, alert/confirm).
+Sözlük anahtarı Türkçe metnin kendisidir; `{0}` yer tutucudur (sabit kısmı 6 karakterden kısa kalıp yalnız sayı yakalar, kullanıcı notu çevrilmesin). Yeni arayüz metni eklersen İngilizcesini `dil_en.json`'a koy; `tests/test_dil.py` yer tutucu/etiket uyumunu ve Python ile tarayıcı kurallarının aynı sonucu verdiğini denetler.
+**Veri biçimi çevrilmez:** Markdown alan adları ve bölümler (`ad`, `tur`, `yakinlik`, `## Temas`, `## Sözler` …) ve dosyaya yazılan her şey Türkçe kalır. Kullanıcı verisi taşıyan kaba `data-cevirme` ver.
+İngilizcede model istemine cevap dili yönergesi eklenir (`ag_model.dil_yonergesi`); Türkçede istem birebir eskisi gibidir. MCP çıktısı şimdilik Türkçedir (`ag_dil.satirlar` hazır). Yerel mesaj taslakları (`ag_yol`, `ag_ozet`) ve demo şimdilik Türkçedir.
+
 ## Kilit (`ag_kilit.py`)
 Kilitliyken sunucu veri göndermez (kilit sunucu tarafında, yalnız görsel örtü değil). Yeni bir uç (GET/POST) eklerken kilit denetiminin
 önünde kalmasın; yalnız `/api/nabiz` ve `/api/kilit/ac|kur` kilitsizdir. Kilit açıkken veriyi kilitsiz dosyaya (ör. `ag.html`) yazma.

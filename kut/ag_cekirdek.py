@@ -1111,12 +1111,15 @@ def _js_json(x):
     return json.dumps(x, ensure_ascii=False).replace("</", "<\\/").replace("<!--", "<\\!--")
 
 
-def sayfa(veri, mod=None, kilit=None):
-    """Şablondaki /*VERI*/null, /*MOD*/null, /*KILIT*/null yer tutucularını TEK geçişte doldurur; kullanıcı verisinin
-    içindeki yer tutucu benzeri metin yeniden işlenmez."""
-    deger = {"VERI": _js_json(veri), "MOD": _js_json(mod), "KILIT": _js_json(kilit)}
+def sayfa(veri, mod=None, kilit=None, dil=None):
+    """Şablondaki /*VERI*/null, /*MOD*/null, /*KILIT*/null, /*DIL*/null yer tutucularını TEK geçişte doldurur; kullanıcı verisinin
+    içindeki yer tutucu benzeri metin yeniden işlenmez. dil="en" ise arayüz sözlüğü gömülür (ag_dil); Türkçede DIL null kalır."""
+    import ag_dil
+    deger = {"VERI": _js_json(veri), "MOD": _js_json(mod), "KILIT": _js_json(kilit), "DIL": _js_json(ag_dil.sayfa_dili(dil))}
     html = open(os.path.join(VARLIK, "ag_sablon.html"), encoding="utf-8").read()
-    return re.sub(r"/\*(VERI|MOD|KILIT)\*/null", lambda m: deger[m.group(1)], html)
+    if dil == "en":
+        html = html.replace('<html lang="tr"', '<html lang="en"', 1)
+    return re.sub(r"/\*(VERI|MOD|KILIT|DIL)\*/null", lambda m: deger[m.group(1)], html)
 
 
 if not globals().get("DEMO_KAPSULU") and not os.environ.get("KUT_ISKELETSIZ"):   # demo kapsülü (ag_demo.py) gerçek veri klasörünü iskeletlemez; yolunu kendisi verir

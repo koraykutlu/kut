@@ -10,6 +10,7 @@ a = Analysis(
     [os.path.join(kok, 'ag_giris.py')],   # giris: sunucu ya da `Kut.exe --ozet` (zamanlanmis haftalik ozet; sunucu acilmaz)
     pathex=[kok],
     datas=[(os.path.join(kok, 'ag_sablon.html'), '.'), (os.path.join(kok, 'kut.ico'), '.'),
+           (os.path.join(kok, 'dil_en.json'), '.'),   # Ingilizce arayuz sozlugu (ag_dil.py)
            (os.path.join(kok, 'ag_ses_isci.py'), '.'),   # ses isci betigi baska bir Python ile calisir; veri olarak gerekir
            (os.path.join(kok, 'ag_cekirdek.py'), '.'),   # demo onizlemesi (ag_demo.py) bu ikisinin ozel kopyasini kurar; PYZ get_code calismazsa kaynak dosyadan
            (os.path.join(kok, 'ag_soz.py'), '.')] + demo_ses,

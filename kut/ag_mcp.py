@@ -23,24 +23,25 @@ SONUC_AZAMI = 25
 TEMAS_AZAMI = 10
 GUN_AZAMI = 365
 
-ARACLAR = [
-    {"name": "kisi_ara",
-     "description": "Kut ağında ada, kuruma, role, alana ya da etikete göre kişi arar. Kimlik (id), ad, kurum, rol, yakınlık (0-3) ve son temas tarihini döner. "
-                    "Kişinin ayrıntısı için sonra kisi_karti ya da brifing çağır.",
-     "inputSchema": {"type": "object", "properties": {"sorgu": {"type": "string", "description": "Ad, kurum, rol ya da etiket parçası"}},
+ARACLAR = [   # açıklamalar İngilizce (MCP istemcileri ve dizinler için); araç ve parametre adları geriye uyum için Türkçe kalır, kayıt içeriği Türkçe olabilir
+    {"name": "kisi_ara", "title": "Search people",
+     "description": "Search the user's Kut network by name, organization, role, field or tag. Returns id, name, organization, role, "
+                    "closeness (0-3) and last contact date. Call kisi_karti or brifing next for details. Records may be in Turkish.",
+     "inputSchema": {"type": "object", "properties": {"sorgu": {"type": "string", "description": "Search text: part of a name, organization, role or tag"}},
                      "required": ["sorgu"]}},
-    {"name": "kisi_karti",
-     "description": "Bir kişinin kartı: kurum, rol, nereden tanışıldığı, yakınlık, kullanıcının görüşü, sonraki adım, açık sözler ve son temas notları.",
-     "inputSchema": {"type": "object", "properties": {"id": {"type": "string", "description": "kisi_ara'dan gelen kimlik"}}, "required": ["id"]}},
-    {"name": "bu_hafta",
-     "description": "Bu hafta ilgilenilmesi gereken kişiler: tarihi gelen sonraki adımlar, yakınlığına göre ihmal edilenler, gecikmiş ya da yaklaşan sözler.",
+    {"name": "kisi_karti", "title": "Contact card",
+     "description": "A person's card: organization, role, where you met, closeness, the user's own view, next step, open promises and recent contact notes.",
+     "inputSchema": {"type": "object", "properties": {"id": {"type": "string", "description": "Person id returned by kisi_ara"}}, "required": ["id"]}},
+    {"name": "bu_hafta", "title": "This week",
+     "description": "Who to reach out to this week: next steps that are due, people neglected for their closeness level, overdue or upcoming promises.",
      "inputSchema": {"type": "object", "properties": {}}},
-    {"name": "son_gorusmeler",
-     "description": "Son N günde kayıtlı temaslar (tarih, kişi, kanal, tek cümle not), yeniden eskiye.",
-     "inputSchema": {"type": "object", "properties": {"gun": {"type": "integer", "minimum": 1, "maximum": GUN_AZAMI, "default": 30}}}},
-    {"name": "brifing",
-     "description": "Bir kişiyle görüşme öncesi tek sayfalık brifing (Markdown): konuşulabilecekler, açık sözler, ortak bağlar, son temaslar.",
-     "inputSchema": {"type": "object", "properties": {"id": {"type": "string"}}, "required": ["id"]}},
+    {"name": "son_gorusmeler", "title": "Recent conversations",
+     "description": "Contacts logged in the last N days (date, person, channel, one-line note), newest first.",
+     "inputSchema": {"type": "object", "properties": {"gun": {"type": "integer", "minimum": 1, "maximum": GUN_AZAMI, "default": 30,
+                                                              "description": "Number of days to look back"}}}},
+    {"name": "brifing", "title": "Meeting brief",
+     "description": "One-page brief (Markdown) before meeting someone: talking points, open promises, mutual connections, recent contacts.",
+     "inputSchema": {"type": "object", "properties": {"id": {"type": "string", "description": "Person id returned by kisi_ara"}}, "required": ["id"]}},
 ]
 
 
@@ -200,8 +201,9 @@ def isle(ileti):
         return cevap({"protocolVersion": istenen if istenen in DESTEKLENEN else PROTOKOL,
                       "capabilities": {"tools": {"listChanged": False}},
                       "serverInfo": {"name": "kut", "title": "Kut", "version": surum.SURUM},
-                      "instructions": "Kut, kullanıcının kişisel ilişki ağıdır (yerel, salt okur). Kişi verisi özeldir: yalnız görev için gerekeni iste, "
-                                      "mesaj içeriği uydurma, kayıtta olmayanı 'kayıtta yok' de. Mesaj taslağı yazabilirsin ama gönderen kullanıcıdır."})
+                      "instructions": "Kut is the user's personal relationship network (local, read-only). Person data is private: request only what the task needs, "
+                                      "never invent message content, and say 'not in the records' when something is missing. You may draft a message, "
+                                      "but the user is the one who sends it. Records are often in Turkish; answer in the user's language."})
     if yontem == "ping":
         return cevap({})
     if yontem == "tools/list":

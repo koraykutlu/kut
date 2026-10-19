@@ -350,6 +350,11 @@ body.kilitli #kilit.goster{display:flex}
 #kilit button{width:100%;margin-top:4px}
 #kilit .hata{min-height:18px;color:#FFB4A8;font-size:12.5px;margin-top:8px}
 #kilit .kutu.salla{animation:kilit-salla .4s}
+#kilit-dil{margin-top:6px;opacity:.75}
+#kilit-dilsec .bayraklar{display:flex;gap:12px;margin-bottom:6px}
+#kilit-dilsec .bayrak{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 8px 12px;margin:0;background:rgba(0,0,0,.22);border:1px solid rgba(234,242,255,.22);color:#FFF6E0;font-size:14px}
+#kilit-dilsec .bayrak:hover,#kilit-dilsec .bayrak:focus-visible{border-color:#F2C14E;background:rgba(242,193,78,.12)}
+#kilit-dilsec .bayrak svg{width:auto;height:36px;margin:0;filter:none;border-radius:3px;box-shadow:0 1px 6px rgba(0,0,0,.35)}
 @keyframes kilit-salla{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
 /* pusula: hedefler, keşif, strateji */
 #pu-pencere{max-height:88vh;display:flex;flex-direction:column}
@@ -994,8 +999,8 @@ body.demo #tur .tur-kart{pointer-events:auto}
   <details class="blok" id="vf-blok" hidden><summary><span class="etiket">Fikirler<span class="sayi" id="vf-say">0</span></span><span class="alt">ikinci beyin</span></summary><ul class="liste vault" id="vault-fikirler"></ul></details>
   <details class="blok" open><summary><span class="etiket">Dikkat<span class="sayi" id="dk-say">0</span></span></summary><div id="dikkat" style="padding-bottom:8px"></div></details>
   <details class="blok" open><summary><span class="etiket">Tür</span></summary><div class="chips" id="turChips"></div></details>
-  <details class="blok"><summary><span class="etiket">Alan ve etiket</span></summary><div class="chips" id="alanChips"></div></details>
-  <details class="blok"><summary><span class="etiket">Nereden</span></summary><div class="chips" id="neredenChips"></div></details>
+  <details class="blok"><summary><span class="etiket">Alan ve etiket</span></summary><div class="chips" id="alanChips" data-cevirme></div></details>
+  <details class="blok"><summary><span class="etiket">Nereden</span></summary><div class="chips" id="neredenChips" data-cevirme></div></details>
   <details class="blok" open><summary><span class="etiket">Görünüm</span></summary>
     <select id="yakin" style="margin-bottom:6px"><option value="0">Tüm yakınlıklar</option><option value="1">En az: yazıştık</option><option value="2">En az: görüştük</option><option value="3">Güçlü ilişki</option></select>
     <label class="kutu"><input type="checkbox" class="anahtar" id="unutulan"> Yalnız soğuyanlar</label>
@@ -1202,17 +1207,123 @@ body.demo #tur .tur-kart{pointer-events:auto}
 <div id="odak-cubuk"><span>◉ <b id="odak-ad"></b> merkezde · <span id="odak-say" class="alt"></span></span><button class="kucuk" id="odak-don" title="Esc">← Ağıma dön</button></div>
 <div id="kilit"><form class="kutu" id="kilit-form" autocomplete="off">
   <svg id="kilit-gunes" viewBox="0 0 64 64"></svg><div class="ad">KUT</div>
+  <div id="kilit-dilsec" data-cevirme hidden><div class="alt">Dilini seç · Choose your language</div>
+    <div class="bayraklar"><button type="button" class="bayrak" data-dil="tr"><svg viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" fill="#E30A17"/><circle cx="10.5" cy="10" r="5" fill="#fff"/><circle cx="11.75" cy="10" r="4" fill="#E30A17"/><polygon points="13.10,10.00 14.79,9.41 14.83,7.62 15.91,9.05 17.62,8.53 16.60,10.00 17.62,11.47 15.91,10.95 14.83,12.38 14.79,10.59" fill="#fff"/></svg><span>Türkçe</span></button><button type="button" class="bayrak" data-dil="en"><svg viewBox="0 0 38 20" aria-hidden="true"><rect width="38" height="20" fill="#fff"/><rect y="0.000" width="38" height="1.538" fill="#B22234"/><rect y="3.077" width="38" height="1.538" fill="#B22234"/><rect y="6.154" width="38" height="1.538" fill="#B22234"/><rect y="9.231" width="38" height="1.538" fill="#B22234"/><rect y="12.308" width="38" height="1.538" fill="#B22234"/><rect y="15.385" width="38" height="1.538" fill="#B22234"/><rect y="18.462" width="38" height="1.538" fill="#B22234"/><rect width="15.2" height="10.769" fill="#3C3B6E"/><g fill="#fff"><circle cx="1.27" cy="1.08" r=".42"/><circle cx="3.80" cy="1.08" r=".42"/><circle cx="6.33" cy="1.08" r=".42"/><circle cx="8.87" cy="1.08" r=".42"/><circle cx="11.40" cy="1.08" r=".42"/><circle cx="13.93" cy="1.08" r=".42"/><circle cx="2.53" cy="2.15" r=".42"/><circle cx="5.07" cy="2.15" r=".42"/><circle cx="7.60" cy="2.15" r=".42"/><circle cx="10.13" cy="2.15" r=".42"/><circle cx="12.67" cy="2.15" r=".42"/><circle cx="1.27" cy="3.23" r=".42"/><circle cx="3.80" cy="3.23" r=".42"/><circle cx="6.33" cy="3.23" r=".42"/><circle cx="8.87" cy="3.23" r=".42"/><circle cx="11.40" cy="3.23" r=".42"/><circle cx="13.93" cy="3.23" r=".42"/><circle cx="2.53" cy="4.31" r=".42"/><circle cx="5.07" cy="4.31" r=".42"/><circle cx="7.60" cy="4.31" r=".42"/><circle cx="10.13" cy="4.31" r=".42"/><circle cx="12.67" cy="4.31" r=".42"/><circle cx="1.27" cy="5.38" r=".42"/><circle cx="3.80" cy="5.38" r=".42"/><circle cx="6.33" cy="5.38" r=".42"/><circle cx="8.87" cy="5.38" r=".42"/><circle cx="11.40" cy="5.38" r=".42"/><circle cx="13.93" cy="5.38" r=".42"/><circle cx="2.53" cy="6.46" r=".42"/><circle cx="5.07" cy="6.46" r=".42"/><circle cx="7.60" cy="6.46" r=".42"/><circle cx="10.13" cy="6.46" r=".42"/><circle cx="12.67" cy="6.46" r=".42"/><circle cx="1.27" cy="7.54" r=".42"/><circle cx="3.80" cy="7.54" r=".42"/><circle cx="6.33" cy="7.54" r=".42"/><circle cx="8.87" cy="7.54" r=".42"/><circle cx="11.40" cy="7.54" r=".42"/><circle cx="13.93" cy="7.54" r=".42"/><circle cx="2.53" cy="8.62" r=".42"/><circle cx="5.07" cy="8.62" r=".42"/><circle cx="7.60" cy="8.62" r=".42"/><circle cx="10.13" cy="8.62" r=".42"/><circle cx="12.67" cy="8.62" r=".42"/><circle cx="1.27" cy="9.69" r=".42"/><circle cx="3.80" cy="9.69" r=".42"/><circle cx="6.33" cy="9.69" r=".42"/><circle cx="8.87" cy="9.69" r=".42"/><circle cx="11.40" cy="9.69" r=".42"/><circle cx="13.93" cy="9.69" r=".42"/></g></svg><span>English</span></button></div></div>
   <div class="alt" id="kilit-alt">Kilitli. Devam etmek için PIN'ini gir.</div>
   <input type="password" id="kilit-pin" inputmode="numeric" placeholder="PIN" aria-label="PIN">
   <input type="password" id="kilit-pin2" inputmode="numeric" placeholder="PIN (tekrar)" aria-label="PIN tekrar" hidden>
   <button class="ana" type="submit" id="kilit-ac">Aç</button>
   <div class="hata" id="kilit-hata"></div>
+  <button type="button" class="hayalet kucuk" id="kilit-dil" data-cevirme hidden></button>
 </form></div>
 <div id="giris"><div class="amblem"><svg id="giris-gunes" viewBox="0 0 64 64"></svg><div id="giris-yazi">KUT</div></div><div id="giris-ipucu">Ses için bir kez tıkla</div></div>
 <script>
 const VERI = /*VERI*/null;
 const MOD = /*MOD*/null;
 const KILIT = /*KILIT*/null;   // sunucu: {kurulu} kilitliyken (veri boş gelir), {acik, sure_dk} açıkken; anlık görüntüde null
+// ---- Dil: Türkçe varsayılan ve kaynaktır. İngilizce seçiliyse sunucu DIL'e sözlüğü (kut/dil_en.json, anahtar = Türkçe metin) gömer; ----
+// ekrana gelen her metin düğümü, satır içi biçimli öğe (b, i, kbd…) ve title/placeholder/aria-label sözlükten çevrilir. Türkçede DIL null:
+// hiçbir şey çevrilmez, gözlemci kurulmaz. Kullanıcı verisi (ad, not) sözlükte olmadığı için olduğu gibi kalır; yazı alanlarına dokunulmaz.
+const DIL = /*DIL*/null;
+const YEREL = DIL ? "en-GB" : "tr-TR";   // tarih biçimi
+const yuzde = n => DIL ? n + "%" : "%" + n;   // Türkçe %40, İngilizce 40%
+const CUMLE_SINIRI = /[.!?] (?=[A-ZÇĞİÖŞÜ«"“])|; (?=\S)/, CUMLE_BOL = /(?<=[.!?]) (?=[A-ZÇĞİÖŞÜ«"“])|(?<=;) (?=\S)/;   // cümle ve "; " sınırı
+const CEVIRI = (() => {
+  if (!DIL || !DIL.sozluk) return null;
+  const tam = new Map(), kaliplar = [], kacis = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  for (const [k, v] of Object.entries(DIL.sozluk)) {
+    if (!/\{\d+\}/.test(k)) { tam.set(k, v); continue; }
+    const sira = [], parca = k.split(/(\{\d+\})/);
+    // yer tutucu en az bir karakter yakalar; anahtarın sonundaki (ya da yalnız noktalamadan önceki) boş kalabilir: "puan {0} · {1} eşleşme{2}"
+    const re = parca.map((p, i) => { const m = /^\{(\d+)\}$/.exec(p); if (!m) return kacis(p); sira.push(+m[1]); return /^[.)]?$/.test(parca.slice(i + 1).join("")) ? "(.*?)" : "(.+?)"; }).join("");
+    const sabit = parca.filter(p => !/^\{\d+\}$/.test(p));
+    const capa = [...sabit].sort((a, b) => b.length - a.length)[0] || "";
+    const sayisal = sabit.join("").trim().length < 6;   // "{0} gün" gibi kısa kalıp yalnız sayı yakalar: kullanıcı notu çevrilmesin
+    kaliplar.push({ re: new RegExp("^" + re + "$", "s"), sira, v, capa, sayisal, cumle: CUMLE_SINIRI.test(k) });
+  }
+  kaliplar.sort((a, b) => b.capa.length - a.capa.length);
+  return { tam, kaliplar, iska: new Set() };
+})();
+function cevirIc(ic, derin) {   // boşluğu sadeleşmiş tek metin → çeviri ya da undefined
+  const v = CEVIRI.tam.get(ic);
+  if (v !== undefined) return v;
+  const cok = CUMLE_SINIRI.test(ic);
+  for (const k of CEVIRI.kaliplar) {
+    if ((k.capa && !ic.includes(k.capa)) || (cok && !k.cumle)) continue;   // tek cümlelik kalıp çok cümleli metni yutmaz
+    const e = k.re.exec(ic);
+    if (!e || (k.sayisal && e.slice(1).some(x => !/^[\d.,:%+\-–\s/]*$/.test(x)))) continue;
+    return k.v.replace(/\{(\d+)\}/g, (_, n) => { const i = k.sira.indexOf(+n); return i < 0 ? "" : derin > 0 ? cevir(e[i + 1], derin - 1) : e[i + 1]; });
+  }
+  if (derin <= 0) return undefined;
+  if (cok) {   // cümle cümle (". " ve "; " sınırı); her parça daha kısa olduğu için özyineleme biter
+    const p = ic.split(CUMLE_BOL);
+    if (p.length > 1) { const y = p.map(x => cevirIc(x, derin) ?? x); if (y.some((x, i) => x !== p[i])) return y.join(" "); }
+  }
+  if (/[.;]$/.test(ic)) { const y = cevirIc(ic.slice(0, -1), derin); if (y !== undefined) return y + ic.slice(-1); }   // sondaki nokta
+  const on = /^([\d–\-.,·\s]+:?\s)(\S[\s\S]*)$/.exec(ic);   // "0–2: bant metni" gibi sayı önekli satır
+  if (on) { const y = cevirIc(on[2], derin - 1); if (y !== undefined) return on[1] + y; }
+  if (ic.includes(" · ")) {   // "Birlikte çalışıyor · not" gibi birleşik satır: parça parça
+    const p = ic.split(" · "), y = p.map(x => cevirIc(x, derin - 1) ?? x);
+    if (y.some((x, i) => x !== p[i])) return y.join(" · ");
+  }
+  return undefined;
+}
+const TEKIL = { people: "person", days: "day", months: "month", years: "year", items: "item", links: "link", lines: "line", inferences: "inference",
+  questions: "question", suggestions: "suggestion", promises: "promise", candidates: "candidate", goals: "goal", events: "event", courses: "course",
+  chats: "chat", matches: "match", connections: "connection", interactions: "interaction", meetings: "meeting", instructors: "instructor", msgs: "msg" };
+const tekil = s => s.replace(/\b1 ([a-z]+)\b/g, (x, w) => TEKIL[w] ? "1 " + TEKIL[w] : x);   // "1 days" → "1 day"
+function cevir(s, derin = 2) {
+  if (!CEVIRI || s == null) return s;
+  const ham = String(s), m = /^(\s*)([\s\S]*?)(\s*)$/.exec(ham), ic = m[2].replace(/\s+/g, " ");
+  if (!ic || CEVIRI.iska.has(ic)) return ham;
+  if (m[2].includes("\n") && !CEVIRI.tam.has(ic)) {   // çok satırlı metin (ipucu, onay): satır satır; kalıp tüm satırları tek yakalamada yutmasın
+    const satir = m[2].split("\n").map(x => cevir(x, derin)).join("\n");
+    if (satir !== m[2]) return m[1] + satir + m[3];
+  }
+  const v = cevirIc(ic, derin);
+  if (v !== undefined) return m[1] + tekil(v) + m[3];
+  if (CEVIRI.iska.size > 5000) CEVIRI.iska.clear();
+  CEVIRI.iska.add(ic); return ham;
+}
+const tx = (s, ...a) => String(cevir(s)).replace(/\{(\d+)\}/g, (x, i) => a[i] ?? x);   // koddan: tx("{0} kişi", n); Türkçede metnin kendisi
+if (CEVIRI) {
+  const ICERIK = new Set(["SCRIPT", "STYLE", "TEXTAREA"]), SATIR_ICI = new Set(["B", "I", "STRONG", "EM", "SMALL", "KBD", "CODE", "BR", "U"]);
+  const OZ = ["title", "placeholder", "aria-label"];
+  // korunur: data-cevirme ya da düzenlenebilir alan altındaki her şey; betik/stil/yazı alanının İÇERİĞİ (öznitelikleri çevrilir)
+  const korunur = n => { for (let e = n.nodeType === 1 ? n : n.parentElement; e; e = e.parentElement) { if (n.nodeType === 3 && ICERIK.has(e.tagName)) return true; if (e.isContentEditable || e.hasAttribute("data-cevirme")) return true; } return false; };
+  const metin = n => { const y = cevir(n.data); if (y !== n.data) n.data = y; };
+  const oznitelik = e => { for (const a of OZ) { const d = e.getAttribute(a); if (d) { const y = cevir(d); if (y !== d) e.setAttribute(a, y); } } };
+  const satirIci = e => {   // yalnız metin + satır içi biçim öğesi taşıyan öğe: cümle bölünmeden, bütün olarak çevrilir
+    let ogeVar = false;
+    for (const c of e.childNodes) {
+      if (c.nodeType === 3) continue;
+      if (c.nodeType !== 1 || !SATIR_ICI.has(c.tagName) || c.attributes.length || [...c.childNodes].some(x => x.nodeType !== 3)) return false;
+      ogeVar = true;
+    }
+    if (!ogeVar) return false;
+    const h = e.innerHTML.replace(/\s+/g, " ").trim(), y = cevir(h);
+    if (y === h) return false;
+    e.innerHTML = y; return true;
+  };
+  const agac = n => {
+    if (n.nodeType === 3) { if (!korunur(n)) metin(n); return; }
+    if (n.nodeType !== 1 || korunur(n)) return;
+    oznitelik(n);
+    if (ICERIK.has(n.tagName) || satirIci(n)) return;
+    for (const c of [...n.childNodes]) agac(c);
+  };
+  agac(document.documentElement);
+  new MutationObserver(ms => {
+    const ebeveyn = new Set();
+    for (const m of ms) {
+      if (m.type === "childList") { m.addedNodes.forEach(n => { agac(n); if (n.parentElement) ebeveyn.add(n.parentElement); }); }
+      else if (m.type === "characterData") { if (!korunur(m.target)) metin(m.target); if (m.target.parentElement) ebeveyn.add(m.target.parentElement); }
+      else if (!korunur(m.target)) oznitelik(m.target);
+    }
+    ebeveyn.forEach(e => { if (e.isConnected && !korunur(e) && !ICERIK.has(e.tagName)) satirIci(e); });
+  }).observe(document.documentElement, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: OZ });
+  for (const ad of ["alert", "confirm", "prompt"]) { const o = window[ad].bind(window); window[ad] = (m, ...r) => o(cevir(m), ...r); }
+}
 const DEMO = MOD && MOD.demo ? MOD.demo : null;   // "Deniz'in salısı" önizlemesi (/demo): kurgusal veri, demo anahtarı; ayrıntı "Demo önizlemesi" bölümünde
 if (KILIT && !KILIT.acik) document.body.classList.add("kilitli");
 let yeniPencere = false;   // kilit bu pencerede açılmadıysa (kapatılıp yeniden açıldı) hiçbir şey göstermeden kilitle
@@ -1244,6 +1355,15 @@ async function api(yol, govde) {
   if (!r.ok) throw new Error(j.hata || r.status);
   return j;
 }
+const cerezDil = () => { const m = /(?:^|;\s*)kut_dil=(tr|en)\b/.exec(document.cookie || ""); return m ? m[1] : null; };
+const dilOner = () => !!DIL || !/^tr\b/i.test(navigator.language || "tr");   // dil anahtarı Türkçe tarayıcıda yalnız Ayarlar'da görünür
+const dilCerezi = d => { document.cookie = `kut_dil=${d}; path=/; max-age=315360000; SameSite=Strict`; };
+async function dilSec(d) {   // sunucu ayarı + çerez (kilit ekranı aynı dili görsün); sayfa yeni dille yeniden yüklenir
+  if (MOD && !DEMO && KILIT && KILIT.acik) { try { await api("/api/dil", { dil: d }); } catch (e) { bildir(e.message); return; } }
+  dilCerezi(d);
+  bilerekYenile = true; location.reload();
+}
+if (MOD && !DEMO && KILIT && KILIT.acik && cerezDil() && cerezDil() !== MOD.dil_ayar) api("/api/dil", { dil: cerezDil() }).catch(() => {});   // kilit ekranında seçilen dil kalıcı olsun (MCP, model)
 let bilerekYenile = false;   // Kut'un kendi yenilemesi; bunun dışında sayfa kapanırsa (pencere kapandı) oturum kilitlenir
 const yenile = id => { if (DEMO) return demoYenile(id); bilerekYenile = true; location.hash = id || ""; location.reload(); };
 // ---- Kut renkleri (Bulut): türler anlam ailesine göre, koyu mavi zeminde ayırt edilir açıklıkta ----
@@ -1829,7 +1949,7 @@ function radar(degerler, boyut = 170, renk = "var(--acc)") {
     s += `<polygon points="${OZ.map(([a], i) => nokta(i, (degerler[a] ?? 0) / 10).join(",")).join(" ")}" fill="${renk}" fill-opacity=".28" stroke="${renk}" stroke-width="2" stroke-linejoin="round"/>`;
     OZ.forEach(([a], i) => { if (degerler[a] != null) { const [x, y] = nokta(i, degerler[a] / 10); s += `<circle cx="${x}" cy="${y}" r="3" fill="${renk}"/>`; } });
   }
-  OZ.forEach(([, et], i) => { const [x, y] = nokta(i, 1.2); s += `<text x="${x}" y="${y}" font-size="9.5" fill="var(--muted)" text-anchor="middle" dominant-baseline="middle">${esc(et.slice(0, 7))}</text>`; });
+  OZ.forEach(([, et], i) => { const [x, y] = nokta(i, 1.2); s += `<text x="${x}" y="${y}" font-size="9.5" fill="var(--muted)" text-anchor="middle" dominant-baseline="middle">${esc(cevir(et).slice(0, 7))}</text>`; });
   return s + "</svg>";
 }
 
@@ -1968,7 +2088,7 @@ function sekmeCiz() {
     }
   } else if (sekme === "iliski") {
     const wa = k.wa_mesaj ? `<div class="bol"><div class="bol-b"><span class="etiket">WhatsApp</span><span class="alt">${esc(k.wa_ilk || "")} → ${esc(k.wa_son || "")}</span></div><div class="wa">
-      <div><b>${esc(k.wa_mesaj)}</b><span>mesaj</span></div><div><b>${esc(k.wa_oturum || "—")}</b><span>konuşma</span></div><div><b>${k.wa_baslatma != null && k.wa_baslatma !== "" ? "%" + esc(k.wa_baslatma) : "—"}</b><span>o başlatıyor</span></div>
+      <div><b>${esc(k.wa_mesaj)}</b><span>mesaj</span></div><div><b>${esc(k.wa_oturum || "—")}</b><span>konuşma</span></div><div><b>${k.wa_baslatma != null && k.wa_baslatma !== "" ? yuzde(esc(k.wa_baslatma)) : "—"}</b><span>o başlatıyor</span></div>
       <div><b>${dk(k.wa_cevap_dk)}</b><span>onun cevabı</span></div><div><b>${dk(k.wa_cevap_ben_dk)}</b><span>senin cevabın</span></div><div><b>${esc(k.wa_son90 ?? "—")}</b><span>son 90 gün</span></div></div></div>` : "";
     const dkl = (VERI.dikkatler || []).filter(d => d.kisiler.includes(k.id));
     ic.innerHTML = `
@@ -2268,7 +2388,7 @@ document.addEventListener("keydown", e => {
 // ---- içe aktarma ----
 let ADAY = [], adaySecim = new Map();
 async function adaylariYukle() { const r = await api("/api/adaylar"); ADAY = r.adaylar; $("ben-adlari").value = (r.ayarlar.ben_adlari || []).join(", "); $("tk-baslik").checked = !!r.ayarlar.takvim_baslik; $("tk-ben").value ||= (r.ayarlar.ben_epostalari || []).join(", "); adayCiz(); }
-const kaynakOzet = a => a.kaynaklar.map(k => k.tip === "rehber" ? "rehber" : k.tip === "wa-birebir" ? `birebir ${k.mesaj + (k.ben_mesaj || 0)} msj · son ${k.son}${k.baslatma_o != null ? ` · %${k.baslatma_o} o başlatıyor` : ""}` : `grup "${esc(k.sohbet)}" ${k.mesaj} msj`).join(" · ");
+const kaynakOzet = a => a.kaynaklar.map(k => k.tip === "rehber" ? "rehber" : k.tip === "wa-birebir" ? `birebir ${k.mesaj + (k.ben_mesaj || 0)} msj · son ${k.son}${k.baslatma_o != null ? ` · ${yuzde(k.baslatma_o)} o başlatıyor` : ""}` : `grup "${esc(k.sohbet)}" ${k.mesaj} msj`).join(" · ");
 function adayCiz() {
   const q = tr($("ad-ara").value), wa = $("ad-wa").checked;
   const gorulen = ADAY.filter(a => (!q || tr(a.ad + " " + (a.telefon || []).join(" ")).includes(q)) && (!wa || a.kaynaklar.some(k => k.tip === "wa-birebir")));
@@ -2610,7 +2730,7 @@ function seskCiz() {
   const kapat = () => $("o-sesk").classList.remove("acik");
   if (k === "kuruluyor") {
     ust("↓ Ses ortamı kuruluyor", `<div class="alt" style="margin-top:8px;line-height:1.6">${esc(d.adim)}</div>
-      <div class="ses-bar"><i id="sesk-bar" style="width:${+d.yuzde || 0}%"></i></div><div class="alt" id="sesk-ileti">%${+d.yuzde || 0} · ${esc(d.ileti || "")}</div>
+      <div class="ses-bar"><i id="sesk-bar" style="width:${+d.yuzde || 0}%"></i></div><div class="alt" id="sesk-ileti">${yuzde(+d.yuzde || 0)} · ${esc(d.ileti || "")}</div>
       <div class="alt" style="margin-top:8px;line-height:1.6">Bilgisayarı kapatma. Bu pencereyi kapatabilirsin; kurulum arka planda sürer, bitince haber veririm.</div>
       <div class="dugmeler"><button class="tehlike" data-sk="iptal">Kurulumu iptal et</button><button data-sk="kapat">Arka planda sürsün</button></div>`);
     dugme("iptal", async () => { try { SESK.d = await api("/api/ses/kurulum/iptal", {}); } catch (e) { bildir(e.message); } seskCiz(); });
@@ -2654,7 +2774,7 @@ function seskYokla() {
     const bar = $("sesk-bar"), il = $("sesk-ileti"), kb = $("sesk-kart-bar");
     if (bar) bar.style.width = (+d.yuzde || 0) + "%";
     if (kb) kb.style.width = (+d.yuzde || 0) + "%";
-    if (il) il.textContent = `%${+d.yuzde || 0} · ${d.ileti || ""}`;
+    if (il) il.textContent = `${yuzde(+d.yuzde || 0)} · ${d.ileti || ""}`;
     if (d.calisiyor) return;
     clearInterval(SESK.t); SESK.t = null;
     await sesDurumYukle();
@@ -2801,7 +2921,7 @@ const tkTarih = s => new Date(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10
 const tkGunEkle = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
 const tkPazartesi = d => tkGunEkle(d, -((d.getDay() + 6) % 7));
 const tkAyBasi = d => new Date(d.getFullYear(), d.getMonth(), 1);
-const tkUzunGun = s => tkTarih(s).toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+const tkUzunGun = s => tkTarih(s).toLocaleDateString(YEREL, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 function tkBugun() { return tkIso(new Date()); }
 function tkAralik() { const b = tkPazartesi(tkAyBasi(TK.odak)); return [b, tkGunEkle(b, 41)]; }   // ay ızgarası 6 hafta; hafta görünümü de bunun içindedir
 function tkBos(not) { return { ogeler: [], gecikmisler: [], gecikmis_toplam: 0, tarihsiz_etkinlik: 0, bugun: tkBugun(), not }; }
@@ -2859,7 +2979,7 @@ function tkAyIzgara(g) {
   let h = "";
   for (let i = 0; i < hafta * 7; i++) {
     const d = tkGunEkle(b, i), iso = tkIso(d), o = g.get(iso) || [];
-    const ad = `${tkUzunGun(iso)}${o.length ? `, ${o.length} öğe` : ", kayıt yok"}`;
+    const ad = `${tkUzunGun(iso)}${o.length ? tx(", {0} öğe", o.length) : tx(", kayıt yok")}`;
     h += `<button class="tk-h${o.length ? " dolu t-" + tkBaskin(o) : ""}${i % 7 > 4 ? " hs" : ""}${d.getMonth() !== ay ? " diger" : ""}${iso === bugun ? " bugun" : ""}${iso === TK.secili ? " sec" : ""}${iso < bugun ? " gecmis" : ""}" data-tk-gun="${iso}" aria-label="${esc(ad)}" aria-pressed="${iso === TK.secili}"${iso === bugun ? ' aria-current="date"' : ""}>
       <span class="tk-n">${d.getDate()}</span>${o.length ? `<span class="tk-say">${o.length}</span>` : ""}
       ${o.length ? `<span class="tk-nokta">${o.slice(0, 6).map(tkNokta).join("")}${o.length > 6 ? `<span class="alt" style="font-size:10px">+${o.length - 6}</span>` : ""}</span><span class="tk-cipler">${o.slice(0, 2).map(tkCip).join("")}</span>` : ""}</button>`;
@@ -2892,17 +3012,17 @@ function tkSiradakiler(sonra, adet) {   // seçili günden sonraki açık öğel
 function tkYanPanel(g) {
   const o = g.get(TK.secili) || [], v = TK.veri || tkBos(""), d = tkTarih(TK.secili), bugunMu = TK.secili === tkBugun();
   const sira = o.length ? [] : tkSiradakiler(TK.secili, 6);
-  const satir = x => `<button class="tk-sira t-${esc(x.tur)} d-${esc(x.durum)}" data-tk-gun="${esc(x.tarih)}" title="${esc(x.baslik)}"><i class="tk-nk"></i><span>${esc(x.baslik)}</span><small>${tkTarih(x.tarih).toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}</small></button>`;
+  const satir = x => `<button class="tk-sira t-${esc(x.tur)} d-${esc(x.durum)}" data-tk-gun="${esc(x.tarih)}" title="${esc(x.baslik)}"><i class="tk-nk"></i><span>${esc(x.baslik)}</span><small>${tkTarih(x.tarih).toLocaleDateString(YEREL, { day: "numeric", month: "short" })}</small></button>`;
   return `<aside class="tk-yan${bugunMu ? " bugun" : ""}" aria-live="polite"><div class="tk-yan-bas"><span class="tk-yan-gun">${d.getDate()}</span>
-      <div><div class="tk-yan-ad">${esc(d.toLocaleDateString("tr-TR", { weekday: "long" }))}${bugunMu ? " · bugün" : ""}</div><div class="tk-etiket">${esc(d.toLocaleDateString("tr-TR", { month: "long", year: "numeric" }))} · ${o.length ? o.length + " öğe" : "boş gün"}</div></div></div>
+      <div><div class="tk-yan-ad">${esc(d.toLocaleDateString(YEREL, { weekday: "long" }))}${bugunMu ? " · bugün" : ""}</div><div class="tk-etiket">${esc(d.toLocaleDateString(YEREL, { month: "long", year: "numeric" }))} · ${o.length ? o.length + " öğe" : "boş gün"}</div></div></div>
     ${o.map(tkOgeHtml).join("") || `<div class="tk-bos">Bu güne bağlı hamle, hedef, söz, kişi adımı ya da etkinlik yok.</div>${sira.length ? `<div class="tk-etiket" style="margin-top:6px">Sıradakiler</div>${sira.map(satir).join("")}` : ""}`}
     ${v.gecikmis_toplam && TK.secili === tkBugun() ? `<div class="alt" style="font-size:11.5px;margin-top:10px">Ayrıca ${v.gecikmis_toplam} gecikmiş öğe daha önceki günlerde; Ajanda görünümünde hepsi bir arada.</div>` : ""}</aside>`;
 }
 function takvimHtml() {
   if (!TK.veri) { takvimDon(); return `<div class="alt">Takvim yükleniyor…</div>`; }
   const g = tkGrupla(), v = TK.veri, ajanda = TK.gorunum === "ajanda";
-  const baslik = TK.gorunum === "hafta" ? (() => { const p = tkPazartesi(TK.odak), s = tkGunEkle(p, 6); return `${p.getDate()} ${p.toLocaleDateString("tr-TR", { month: "short" })} – ${s.getDate()} ${s.toLocaleDateString("tr-TR", { month: "short", year: "numeric" })}`; })()
-    : TK.odak.toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
+  const baslik = TK.gorunum === "hafta" ? (() => { const p = tkPazartesi(TK.odak), s = tkGunEkle(p, 6); return `${p.getDate()} ${p.toLocaleDateString(YEREL, { month: "short" })} – ${s.getDate()} ${s.toLocaleDateString(YEREL, { month: "short", year: "numeric" })}`; })()
+    : TK.odak.toLocaleDateString(YEREL, { month: "long", year: "numeric" });
   const birim = TK.gorunum === "hafta" ? "hafta" : "ay", ayKod = tkIso(TK.odak).slice(0, 7), sayac = {};
   v.ogeler.forEach(o => { if (o.tarih.slice(0, 7) === ayKod && o.durum !== "tamam") sayac[o.tur] = (sayac[o.tur] || 0) + 1; });
   const gecSay = new Set([...v.gecikmisler, ...v.ogeler.filter(o => o.durum === "gecikmis")].map(o => o.id)).size;
@@ -2971,11 +3091,17 @@ function arayuzSesBagla(ic) {
     catch (e) { c.checked = !hedef; bildir(e.message); }
   });
 }
+function dilHtml() {
+  return `<div class="pu-kart"><h4 data-cevirme>Dil · Language</h4>
+    <div class="sat">Arayüz dili. Notların ve kişi dosyaların değişmez; yalnız ekrandaki yazılar ve Kut'un cevap dili değişir.</div>
+    <select id="ay-dil" data-cevirme style="max-width:220px"><option value="tr"${DIL ? "" : " selected"}>Türkçe</option><option value="en"${DIL ? " selected" : ""}>English</option></select></div>`;
+}
+function dilBagla(ic) { ic.querySelectorAll("#ay-dil, #sih-dil").forEach(s => s.onchange = () => dilSec(s.value)); }
 function ayarCiz() {
   const ic = $("ay-ic");
   if (!PU.veri) { ic.innerHTML = `<div class="alt">Yükleniyor…</div>`; return; }
-  ic.innerHTML = sihKartHtml() + arayuzSesHtml() + bildirimHtml() + kaynakHtml();
-  ayarBagla(ic); arayuzSesBagla(ic); bildirimBagla(ic);
+  ic.innerHTML = sihKartHtml() + dilHtml() + arayuzSesHtml() + bildirimHtml() + kaynakHtml();
+  ayarBagla(ic); dilBagla(ic); arayuzSesBagla(ic); bildirimBagla(ic);
 }
 function pusulaCiz() {
   document.querySelectorAll("[data-pu]").forEach(b => b.classList.toggle("on", b.dataset.pu === PU.sekme));
@@ -3391,7 +3517,7 @@ function yolZincirHtml(y) {
 function yolDetayHtml(v, y) {
   const k = YOLP.kisi, takipte = YOLP.takip.has(yolAnahtar(v, y)), g = gun(k);
   return (v.dogrudan
-      ? `<div class="yol-dogrudan"><b>Zaten tanışıyorsun.</b> Aracı gerekmez${k.yakinlik ? ` · yakınlık: ${esc(YAK[k.yakinlik])}` : ""}${g !== null ? ` · son temas ${g} gün önce` : ""}.</div>`
+      ? `<div class="yol-dogrudan"><b>Zaten tanışıyorsun.</b> Aracı gerekmez${k.yakinlik ? ` · ${esc(tx("yakınlık: {0}", cevir(YAK[k.yakinlik])))}` : ""}${g !== null ? ` · ${esc(tx("son temas {0} gün önce", g))}` : ""}.</div>`
       : yolZincirHtml(y))
     + `<div class="yol-skor"><span class="kt-et">Bağ gücü</span><div class="yol-cubuk" role="img" aria-label="Zincirin bağ gücü ${+y.skor || 0} / 100"><i style="width:${Math.max(0, Math.min(100, +y.skor || 0))}%"></i></div><b>${+y.skor || 0}</b></div>`
     + (y.gerekce.length ? `<ul class="yol-gerekce">${y.gerekce.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : "")
@@ -3560,7 +3686,7 @@ function sonuclarHtml() {
   const red = (v.istatistik || {}).red_nedenleri || {};
   return `<div class="pu-ozet">Kut'un önerdiği adımlar ve senin kararın. Sonuçları işaretledikçe sonraki öneriler buna göre ayarlanır: ısrarla aynı şeyi önermem. Dosya <code>sonuclar.md</code>; elle de düzenleyebilirsin.</div>
     <div class="so-kaynak"><span>Son 8 hafta</span></div>
-    <div class="so-ozet">${sayi(+i.toplam || 0, "Öneri")}${sayi(+i.yapilan || 0, "Yapılan")}${sayi(+i.ise_yarayan || 0, "İşe yarayan")}${sayi(i.oran == null ? "—" : "%" + Math.round(i.oran * 100), "İşe yarama")}</div>
+    <div class="so-ozet">${sayi(+i.toplam || 0, "Öneri")}${sayi(+i.yapilan || 0, "Yapılan")}${sayi(+i.ise_yarayan || 0, "İşe yarayan")}${sayi(i.oran == null ? "—" : yuzde(Math.round(i.oran * 100)), "İşe yarama")}</div>
     ${Object.keys(kay).length ? `<div class="so-kaynak">${Object.entries(kay).map(([a, n]) => `<span>${esc(SONUC_KAYNAK[a] || a)} <b>${+n.toplam}</b></span>`).join("")}</div>` : ""}
     ${Object.keys(red).length ? `<div class="so-red-ozet"><span>Uymayanlar (son 8 hafta):</span>${Object.entries(red).map(([k, n]) => `<span>${esc((RED[k] || [k])[0])} <b>${+n}</b></span>`).join("")}</div>` : ""}
     ${temasKutusuHtml("so")}
@@ -3793,12 +3919,14 @@ function kapanisSatiri() {   // özellik turu bitince: adıyla kısa kapanış
   return dogumGunuMu() ? `Hazırız${a ? ", " + a : ""}. Hem de doğum gününde: ağın senin.` : `Tamam${a ? ", " + a : ""}, ağın hazır. İstediğin an Ayarlar'dan turu yeniden açarsın.`;
 }
 function sihHos(ic) {
-  const bil = SIH.tam ? [] : SIH.hazirlar.map(a => a.bilinen);   // tam sihirbazda hazır adımlar listede kalır; özet gerekmez
+  const bil = SIH.tam ? [] : SIH.hazirlar.map(a => cevir(a.bilinen));   // tam sihirbazda hazır adımlar listede kalır; özet gerekmez
   const ozet = bil.length ? `<div class="sih-durum iyi">Bunları zaten biliyorum: ${esc(bil.join(", "))}. Bu adımları atladım; kalanlar birkaç dakika sürer.
     <div class="sih-tam"><button class="kucuk hayalet" id="sih-tam">Hazır olanları da gez</button></div></div>` : "";
   ic.innerHTML = `<p class="sih-selam">${esc(karsilamaSatiri())}</p>${ozet}<p>Kut yalnız bu bilgisayarda çalışan kişisel ilişki ağın. Önce birkaç kısa adımla senin için kuralım; hepsi atlanabilir, hepsi sonradan Ayarlar'dan değişir. Ardından özellikleri tek tek ışıkta göstereceğim.</p>
     <div class="sih-durum iyi"><b>Güvence:</b> sen onaylamadan hiçbir şey internete çıkmaz. Ağın, notların ve PIN'in bu bilgisayarda kalır.</div>
-    <div class="sih-demo"><button class="kucuk" id="sih-demo">Önce bir örnekle göster</button><span class="alt">Kurgusal bir kişinin ağı, 1 dakika; senin verine dokunmaz.</span></div>`;
+    <div class="sih-demo"><button class="kucuk" id="sih-demo">Önce bir örnekle göster</button><span class="alt">Kurgusal bir kişinin ağı, 1 dakika; senin verine dokunmaz.</span></div>${dilOner() && !DEMO ? `
+    <div class="sih-demo"><select id="sih-dil" data-cevirme style="max-width:180px"><option value="tr"${DIL ? "" : " selected"}>Türkçe</option><option value="en"${DIL ? " selected" : ""}>English</option></select><span class="alt" data-cevirme>Dil · Language</span></div>` : ""}`;
+  dilBagla(ic);
   const t = $("sih-tam"); if (t) t.onclick = () => sihKur(true);
   $("sih-demo").onclick = demoBaslat;
 }
@@ -3846,7 +3974,7 @@ function sihSes(ic) {
     const k = $("sih-ses-durum"); if (!k) return;
     const d = SESK.d || {}, hazir = SESD.oku && SESD.yaz;
     k.className = "sih-durum" + (hazir ? " iyi" : d.durum === "hata" ? " uyari" : "");
-    k.textContent = hazir ? "✓ Sesli iletişim hazır: 🎙 ve 🔈 açık." : d.durum === "kuruluyor" ? `↓ Kuruluyor… %${+d.yuzde || 0} ${d.adim || ""}`
+    k.textContent = hazir ? "✓ Sesli iletişim hazır: 🎙 ve 🔈 açık." : d.durum === "kuruluyor" ? `↓ Kuruluyor… ${yuzde(+d.yuzde || 0)} ${d.adim || ""}`
       : d.durum === "hata" ? "Kurulum tamamlanamadı; Ayarlar → Kaynaklar'dan yeniden deneyebilirsin." : SESD.oku || SESD.yaz ? "Kısmen hazır: eksik parçayı kurabilirsin." : "Henüz kurulu değil. Şimdi kurabilir ya da sonra karar verebilirsin.";
   };
   sesDurumYukle().then(tazele); SIH.zaman = setInterval(tazele, 1200);
@@ -4312,8 +4440,17 @@ function kilitGoster() {
   $("kilit-pin2").hidden = !kur; $("kilit-ac").textContent = kur ? "PIN'i belirle ve aç" : "Aç";
   $("kilit-alt").innerHTML = kur ? "Kut'taki kişiler ve notlar özel. Açılışta sorulacak bir PIN belirle (en az 4 hane)."
                                  : "Kilitli. Devam etmek için PIN'ini gir.";
+  const dd = $("kilit-dil"); dd.hidden = !dilOner(); dd.textContent = DIL ? "Türkçe" : "English"; dd.onclick = () => dilSec(DIL ? "tr" : "en");
+  const dilSor = kur && !cerezDil();   // ilk açılış: önce dil (bayraklar), sonra PIN
+  $("kilit-dilsec").hidden = !dilSor;
+  for (const id of ["kilit-alt", "kilit-pin", "kilit-ac", "kilit-hata"]) $(id).hidden = dilSor;
+  $("kilit-pin2").hidden = dilSor || !kur; if (dilSor) dd.hidden = true;
+  $("kilit-dilsec").querySelectorAll("[data-dil]").forEach(b => b.onclick = () => {
+    const d = b.dataset.dil; dilCerezi(d);
+    if (d === (DIL ? "en" : "tr")) kilitGoster(); else location.reload();   // aynı dilse yenilemeden PIN adımına geç
+  });
   k.classList.add("goster"); requestAnimationFrame(() => requestAnimationFrame(() => k.classList.add("belir")));
-  setTimeout(() => $("kilit-pin").focus(), 80);
+  setTimeout(() => (dilSor ? $("kilit-dilsec").querySelector("[data-dil]") : $("kilit-pin")).focus(), 80);
 }
 $("kilit-form").onsubmit = async e => {
   e.preventDefault();

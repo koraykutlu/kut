@@ -31,10 +31,10 @@ import surum as sv  # noqa: E402
 
 EXE_BAYT = b"MZ" + b"kut-exe-icerik" * 50
 EXE_SHA = hashlib.sha256(EXE_BAYT).hexdigest()
-INDIR = "https://github.com/koraykutlu/kut/releases/download/v1.4.0/"
+INDIR = "https://github.com/koraykutlu/kut/releases/download/v1.5.0/"
 
 
-def yayin(surum="1.4.0", digest=EXE_SHA, sums=None, exe_url=None, exe=True):
+def yayin(surum="1.5.0", digest=EXE_SHA, sums=None, exe_url=None, exe=True):
     assets = []
     if exe:
         a = {"name": "Kut.exe", "size": len(EXE_BAYT), "browser_download_url": exe_url or INDIR + "Kut.exe"}
@@ -72,7 +72,7 @@ class SurumTest(unittest.TestCase):
                 sv.ayristir(kotu)
 
     def test_surum_sabiti(self):
-        self.assertEqual(sv.SURUM, "1.3.1")
+        self.assertEqual(sv.SURUM, "1.4.0")
         sv.ayristir(sv.SURUM)
 
 
@@ -112,16 +112,16 @@ class RizaVeSinirTest(Temel):
 
     def test_elle_denetim_riza_olmadan_calisir_ve_onbellege_yazar(self):
         self.ag.side_effect = None
-        self.ag.return_value = yayin("1.4.0", sums="Kut.exe.sha256")
+        self.ag.return_value = yayin("1.5.0", sums="Kut.exe.sha256")
         d = gu.denetle(elle=True)
         self.assertEqual(self.ag.call_count, 1)
         self.assertTrue(d["yeni"])
         self.assertTrue(d["sorulmadi"])   # elle denetim rıza yerine geçmez
-        self.assertEqual(d["son"]["surum"], "1.4.0")
+        self.assertEqual(d["son"]["surum"], "1.5.0")
         self.assertEqual(d["son"]["exe"]["sha256"], EXE_SHA)
         self.assertLessEqual(len(d["son"]["notlar"]), gu.NOT_AZAMI)
         self.assertEqual(self.ag.call_args[0][0], gu.API_URL)
-        self.assertEqual(ia.ayarlar()["guncelleme"]["son"]["surum"], "1.4.0")   # önbellek ayar dosyasında
+        self.assertEqual(ia.ayarlar()["guncelleme"]["son"]["surum"], "1.5.0")   # önbellek ayar dosyasında
 
     def test_ayni_surum_yeni_degil_ve_bozuk_etiket_reddedilir(self):
         self.ag.side_effect = None
@@ -186,7 +186,7 @@ class ExeUygulamaTest(Temel):
         return len(EXE_BAYT), self.indir_ozet
 
     def test_basarili_guncelleme(self):
-        self.ag.return_value = yayin("1.4.0")
+        self.ag.return_value = yayin("1.5.0")
         if os.name != "nt":
             self.skipTest("exe güncellemesi yalnız Windows")
         r = gu.uygula()
@@ -194,19 +194,19 @@ class ExeUygulamaTest(Temel):
         self.degistir.assert_called_once_with(*[self.yollar[0], self.yollar[1], self.yollar[2]])
         self.kapat.assert_called_once()
         self.assertTrue(os.path.isfile(self.yollar[1]))
-        self.assertEqual(ia.ayarlar()["guncelleme"]["onceki"]["surum"], "1.3.1")
+        self.assertEqual(ia.ayarlar()["guncelleme"]["onceki"]["surum"], "1.4.0")
 
     def test_sums_dosyasindan_dogrulama(self):
         if os.name != "nt":
             self.skipTest("exe güncellemesi yalnız Windows")
-        self.ag.side_effect = [yayin("1.4.0", digest=None, sums="Kut.exe.sha256"), (EXE_SHA + "  Kut.exe\r\n").encode()]
+        self.ag.side_effect = [yayin("1.5.0", digest=None, sums="Kut.exe.sha256"), (EXE_SHA + "  Kut.exe\r\n").encode()]
         gu.uygula()
         self.degistir.assert_called_once()
 
     def test_sağlama_uyusmazligi_reddedilir(self):
         if os.name != "nt":
             self.skipTest("exe güncellemesi yalnız Windows")
-        self.ag.return_value = yayin("1.4.0")
+        self.ag.return_value = yayin("1.5.0")
         self.indir_ozet = "0" * 64
         with self.assertRaisesRegex(ValueError, "uyuşmuyor"):
             gu.uygula()
@@ -218,7 +218,7 @@ class ExeUygulamaTest(Temel):
     def test_sağlama_toplami_yoksa_reddedilir(self):
         if os.name != "nt":
             self.skipTest("exe güncellemesi yalnız Windows")
-        self.ag.return_value = yayin("1.4.0", digest=None)
+        self.ag.return_value = yayin("1.5.0", digest=None)
         with self.assertRaisesRegex(ValueError, "sağlama toplamı"):
             gu.uygula()
         self.indir.assert_not_called()   # indirmeden önce reddedildi
@@ -227,7 +227,7 @@ class ExeUygulamaTest(Temel):
     def test_sums_dosyasi_exe_icin_hash_icermiyorsa_reddedilir(self):
         if os.name != "nt":
             self.skipTest("exe güncellemesi yalnız Windows")
-        self.ag.side_effect = [yayin("1.4.0", digest=None, sums="SHA256SUMS"), (EXE_SHA + "  baska.zip\n").encode()]
+        self.ag.side_effect = [yayin("1.5.0", digest=None, sums="SHA256SUMS"), (EXE_SHA + "  baska.zip\n").encode()]
         with self.assertRaisesRegex(ValueError, "sağlama toplamı"):
             gu.uygula()
         self.indir.assert_not_called()
@@ -235,9 +235,9 @@ class ExeUygulamaTest(Temel):
     def test_izinsiz_ana_makine_reddedilir(self):
         if os.name != "nt":
             self.skipTest("exe güncellemesi yalnız Windows")
-        for kotu in ("https://evil.example/Kut.exe", "http://github.com/koraykutlu/kut/releases/download/v1.4.0/Kut.exe",
-                     "https://github.com/baska/depo/releases/download/v1.4.0/Kut.exe", "https://127.0.0.1/Kut.exe"):
-            self.ag.return_value = yayin("1.4.0", exe_url=kotu)
+        for kotu in ("https://evil.example/Kut.exe", "http://github.com/koraykutlu/kut/releases/download/v1.5.0/Kut.exe",
+                     "https://github.com/baska/depo/releases/download/v1.5.0/Kut.exe", "https://127.0.0.1/Kut.exe"):
+            self.ag.return_value = yayin("1.5.0", exe_url=kotu)
             with self.assertRaises(ValueError, msg=kotu):
                 gu.uygula()
         self.indir.assert_not_called()
@@ -246,7 +246,7 @@ class ExeUygulamaTest(Temel):
     def test_exe_varligi_yoksa_reddedilir(self):
         if os.name != "nt":
             self.skipTest("exe güncellemesi yalnız Windows")
-        self.ag.return_value = yayin("1.4.0", exe=False)
+        self.ag.return_value = yayin("1.5.0", exe=False)
         with self.assertRaises(ValueError):
             gu.uygula()
         self.indir.assert_not_called()
@@ -282,7 +282,7 @@ class GitTest(Temel):
     def setUp(self):
         super().setUp()
         self.ag.side_effect = None
-        self.ag.return_value = yayin("1.4.0")
+        self.ag.return_value = yayin("1.5.0")
         mock.patch.object(gu, "kurulum_turu", return_value="git").start()
         self.durum = {"remote": "origin\thttps://github.com/koraykutlu/kut.git", "kirli": "", "ff": 0, "head": "a" * 40, "etiket": "b" * 40}
         self.cagrilar = []
@@ -462,7 +462,7 @@ class GuncellemeApiTest(unittest.TestCase):
         kod, _, g = self.istek("GET", "/api/guncelleme", None, a)
         self.assertEqual(kod, 200)
         d = json.loads(g)
-        self.assertEqual(d["surum"], "1.3.1")
+        self.assertEqual(d["surum"], "1.4.0")
         self.assertTrue(d["sorulmadi"])
         self.assertIsNone(d["otomatik"])
         self.assertFalse(os.path.exists(self.ayar) and "guncelleme" in open(self.ayar, encoding="utf-8").read())   # sormadan hiçbir şey yazılmadı

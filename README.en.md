@@ -9,8 +9,9 @@ Website: **[koraykutlu.github.io/kut/en](https://koraykutlu.github.io/kut/en/)**
 
 ![Kut: map, person card, this week and Compass](docs/img/kut-demo.gif)
 
-> **The interface is in Turkish.** This README describes it in English; button and menu names are given in Turkish with a translation,
-> e.g. **Pusula** (Compass), so you can find them on screen. Kut was formerly called "Ağım" ("my network").
+> **The interface speaks Turkish and English.** Turkish is the default; switch with ⚙ Settings → *Dil · Language* (or *English* on the
+> lock screen). Your notes and person files don't change; only the on-screen text and the language Kut's assistant answers in.
+> This README gives button names in English with the Turkish original, e.g. **Compass** (*Pusula*). Kut was formerly called "Ağım" ("my network").
 
 All screenshots and the GIF in this README (v1.1 interface) were taken with **fully fictional** data produced by `demo/demo_veri.py` (the person at the centre is "Deniz Demo"), with the fictional import samples under `demo/ornek/` and with the in-app demo "Deniz'in salısı" (Deniz's Tuesday); there are no real people in them.
 
@@ -154,7 +155,7 @@ Details and limits:
 
 1. **Public pages** (table above). Only public pages that require no login are downloaded; none of your network's information is sent with these requests. In older installations that already downloaded data, Vekilpedia and Events count as on; you turn them off in the Sources tab.
 2. **Optional AI assistant.** Analysis, "Ask Kut" and strategic reading go to a model through an AI command-line tool installed on your computer (default and recommended: **Claude Code**, `claude -p`; alternatives below).
-   If the selected provider (Claude Code, Codex CLI, Gemini CLI or local Ollama) is not installed or not working, these features don't work (the buttons show a Turkish warning naming the selected provider); everything else does. They run only when you use them, with one exception: if the selected provider is ready and you have **an approved (active) goal**, Kut starts the strategic reading by itself at launch once 7 days have passed since the last one. To turn this off: `ayarlar.json` → `"otomatik_strateji": false`. Every piece of person data that goes to a model first passes a local **gate** (`ag_kapi.py`):
+   If the selected provider (Claude Code, Codex CLI, Gemini CLI or local Ollama) is not installed or not working, these features don't work (the buttons show a warning naming the selected provider); everything else does. They run only when you use them, with one exception: if the selected provider is ready and you have **an approved (active) goal**, Kut starts the strategic reading by itself at launch once 7 days have passed since the last one. To turn this off: `ayarlar.json` → `"otomatik_strateji": false`. Every piece of person data that goes to a model first passes a local **gate** (`ag_kapi.py`):
    - a person with `remote_allowed: false` (or whose file cannot be read) is present neither in the prompt nor in the temporary data copy prepared for the model. The **🔒 Bu kişi yapay zekâya gönderilmez** (Never send this person to AI) switch on the person card writes/removes this field (a version copy is saved before the write, and the in-memory chat history is cleared immediately); while it is on, a badge appears on the card and "✦ Analiz" (Analyse) and document summarising are disabled for that person (documents are only stored locally);
    - people from organisations/parties matching `veri/haric.md` are left out the same way; the copy also contains no `haric.md`, `ag.html`, `arsiv/`, lock or settings files;
    - the **secret filter** (`ag_sir.py`) turns values such as keys, tokens and passwords (including encoded forms) into `[gizlendi]` (hidden);
@@ -203,7 +204,7 @@ No Python needed.
 3. On first launch you set a **PIN**.
 
 Your data lives as Markdown in the `Documents\Kut` folder; settings and logs are under `%LOCALAPPDATA%\agim`. For another folder: `Kut.exe --veri FOLDER`.
-Voice (Whisper / EMA) and AI analysis (Claude Code) are optional; for voice Kut offers a download with your consent (because pip cannot run from inside Kut.exe, Python 3.11–3.13 must be installed on your computer; otherwise it shows [python.org/downloads](https://www.python.org/downloads/)). If Claude Code is not installed, the related buttons show a Turkish warning and everything else works.
+Voice (Whisper / EMA) and AI analysis (Claude Code) are optional; for voice Kut offers a download with your consent (because pip cannot run from inside Kut.exe, Python 3.11–3.13 must be installed on your computer; otherwise it shows [python.org/downloads](https://www.python.org/downloads/)). If Claude Code is not installed, the related buttons show a warning and everything else works.
 
 To build it yourself: `powershell -ExecutionPolicy Bypass -File paketleme\paketle.ps1` (output `build-exe\dist\Kut.exe`).
 

@@ -46,6 +46,7 @@ import ag_kesif as ks  # noqa: E402
 import ag_strateji as st  # noqa: E402
 import ag_ajanda as aj  # noqa: E402
 import ag_guncelle as gu  # noqa: E402
+import ag_dil  # noqa: E402
 import ag_yol as yl  # noqa: E402
 import ag_brifing as br  # noqa: E402
 import ag_sonuc as sn  # noqa: E402
@@ -85,7 +86,7 @@ def statik_yenile():
         return
     try:
         with open(os.path.join(c.VERI, "ag.html"), "w", encoding="utf-8") as f:
-            f.write(c.sayfa(c.veri_hazirla()))
+            f.write(c.sayfa(c.veri_hazirla(), dil=ag_dil.etkin()))
     except Exception:
         gunluk("statik: " + hata_izi())
 
@@ -929,6 +930,10 @@ class Isleyici(BaseHTTPRequestHandler):
             self.send_header(ad, deger)
         self.end_headers()
 
+    def _dil(self):
+        """Sayfa dili: tarayıcının kut_dil çerezi (kilit ekranındaki seçim de buraya yazar) → ayarlar.json "dil" → Türkçe."""
+        return ag_dil.cerezden(self.headers.get("Cookie")) or ag_dil.etkin()
+
     def _demo_sayfa(self):
         """Demo önizlemesi ("Deniz'in salısı"): yalnız kilit açıkken ve /api/demo/baslat sonrası. Sayfa gerçek oturum anahtarını DEĞİL,
         demo anahtarını taşır; gerçek uçlar onu reddeder. Veri geçici demo klasöründen gelir, kullanıcının verisine bakılmaz."""
@@ -939,7 +944,7 @@ class Isleyici(BaseHTTPRequestHandler):
             return self._yonlendir("/")
         veri, meta, demo_anahtar = s
         html = c.sayfa(veri, {"anahtar": demo_anahtar, "sihirbaz": {"bitti": True}, "arayuz_sesi": arayuz_sesi_acik(), "bilinen": {}, "demo": meta},
-                       {"acik": True, "kurulu": True, "sure_dk": kl.sure_dk()})
+                       {"acik": True, "kurulu": True, "sure_dk": kl.sure_dk()}, dil=self._dil())
         return self._gonder(200, html.encode("utf-8"), "text/html; charset=utf-8")
 
     def _gonder(self, kod, govde, tip="application/json; charset=utf-8", cerez=None):
@@ -964,11 +969,12 @@ class Isleyici(BaseHTTPRequestHandler):
         try:
             if yol == "/":
                 if not self._acik():   # kilitli: kişisel veri yok, yalnız gök + açılış + kilit ekranı
-                    html = c.sayfa(kl.bos_veri(), None, {"kurulu": kl.kurulu()})
+                    html = c.sayfa(kl.bos_veri(), None, {"kurulu": kl.kurulu()}, dil=self._dil())
                     return self._gonder(200, html.encode("utf-8"), "text/html; charset=utf-8")
                 with kilit:
-                    html = c.sayfa(c.veri_hazirla(), {"anahtar": ANAHTAR, "sihirbaz": {"bitti": sihirbaz_bitti()}, "arayuz_sesi": arayuz_sesi_acik(), "bilinen": sihirbaz_bilinen()},
-                                   {"acik": True, "kurulu": True, "sure_dk": kl.sure_dk()})
+                    html = c.sayfa(c.veri_hazirla(), {"anahtar": ANAHTAR, "sihirbaz": {"bitti": sihirbaz_bitti()}, "arayuz_sesi": arayuz_sesi_acik(), "bilinen": sihirbaz_bilinen(),
+                                                      "dil_ayar": ag_dil.ayar_dili()},
+                                   {"acik": True, "kurulu": True, "sure_dk": kl.sure_dk()}, dil=self._dil())
                 return self._gonder(200, html.encode("utf-8"), "text/html; charset=utf-8")
             if yol == "/api/nabiz":
                 return self._gonder(200, {"ok": True})
@@ -1450,6 +1456,16 @@ def arayuz_sesi_ayar(g):
 
 
 ISLEMLER["/api/arayuz/ses"] = arayuz_sesi_ayar
+
+
+def dil_ayar(g):
+    """{dil: "tr" | "en"} → ayarlar.json → dil (arayüz, MCP çıktısı ve model cevap dili). Veri dosyaları her iki dilde de aynıdır."""
+    return {"dil": ag_dil.dil_ayarla(g.get("dil"))}
+
+
+ISLEMLER["/api/dil"] = dil_ayar
+DEGISTIRMEYEN.add("/api/dil")
+KOKEN_DENETIMLI.add("/api/dil")
 DEGISTIRMEYEN.add("/api/arayuz/ses")
 KOKEN_DENETIMLI.add("/api/arayuz/ses")   # sihirbaz ucu gibi: anahtara ek olarak Origin de bu sunucudan gelmeli
 

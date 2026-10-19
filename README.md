@@ -11,7 +11,9 @@ Tanıtım sayfası: **[koraykutlu.github.io/kut](https://koraykutlu.github.io/ku
 
 > *Kut (formerly "Ağım") is a local, private personal-network app: a photo map of the people you know, contact log, promises,
 > introduction paths and a weekly "who should I reach out to" digest. Python 3 standard library, bound to `127.0.0.1`, no accounts, no cloud,
-> plain Markdown data. The interface is in Turkish. **Full English README: [README.en.md](README.en.md).** Licence: MIT.*
+> plain Markdown data. Interface in Turkish and English (⚙ Settings → *Dil · Language*). **Full English README: [README.en.md](README.en.md).** Licence: MIT.*
+
+Arayüz Türkçe ve İngilizce: varsayılan Türkçe; ⚙ Ayarlar → *Dil · Language* ile değişir. Notların ve kişi dosyaların değişmez.
 
 Bu README'deki tüm ekran görüntüleri ve GIF (v1.1 arayüzü), `demo/demo_veri.py`'nin ürettiği **tamamen kurgusal** verilerle (merkezdeki kişi "Deniz Demo"), içe aktarma örnekleri `demo/ornek/` altındaki kurgusal dosyalarla ve uygulama içi "Deniz'in salısı" demosuyla çekilmiştir; gerçek kişi yoktur.
 
