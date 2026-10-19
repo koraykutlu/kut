@@ -145,6 +145,7 @@ Your data lives in the `veri/` folder as plain Markdown and is excluded from the
 | OpenAlex / ORCID | api.openalex.org, pub.orcid.org (professor's name only) | if `kesif.akademik` is on (off in a new installation) |
 | Vekilpedia | vekilpedia.com | if `kesif.vekilpedia` is on (off in a new installation) |
 | Events | the event sites in the table | if `kesif.etkinlik` is on (off in a new installation) |
+| MCP client | the model behind the assistant you connect (e.g. Anthropic) | only if you add Kut to an MCP client yourself and the assistant calls a tool; goes through the person gate, read-only |
 | Remote model providers | Anthropic (Claude Code), OpenAI (Codex), Google (Gemini); local Ollama goes nowhere | only when you use analysis / "Ask Kut" / strategy; choosing Codex or Gemini asks for extra confirmation |
 
 **What never goes online.** Imports (WhatsApp, contacts, calendar .ics, LinkedIn CSV/ZIP, pasted course lists) are processed entirely locally on this computer; they are not on the list above because they make no requests at all (for calendar and LinkedIn there is no account connection, secret calendar URL or scraping). Instructions inside a source file are data, not commands. **A developer tool that is not part of the app:** `paketleme/demo_seslendir.py` generates the demo narration once before a release with Google Gemini TTS (the key is read only from the `GEMINI_API_KEY` environment variable; only the fixed demo texts are sent, no person data); it is not included in `Kut.exe` or the running app, and Kut never runs it. The ready-made audio files (`kut/demo_ses/`) ship with the app only to be played.
@@ -366,6 +367,36 @@ Markdown is the single source of truth (the `veri/` folder; details in `AGENTS.m
 This folder is also the workspace of an AI agent (`AGENTS.md` instructions): if you open the folder with an agent like Claude and say
 "Had coffee with Ali, talked about an internship, I'll write to him in 2 weeks", the contact, closeness and next step are saved; you can ask "Who should I focus on this week?".
 The agent never writes its inferences directly to a person file beyond suggesting them.
+
+### Connect it to your AI assistant (MCP)
+Kut also runs as an **MCP server**: Claude Desktop, Claude Code or any MCP-capable assistant can use your network through **read-only** tools.
+Ask "I'm meeting Deniz tomorrow, what did we talk about last time?" or "Who have I neglected this week?" and the assistant looks it up in Kut.
+No extra packages, no open port, and Kut's window doesn't need to be running.
+
+| Tool | Returns |
+|---|---|
+| `kisi_ara` | people by name, organisation, role or tag (id, closeness, last contact) |
+| `kisi_karti` | organisation, role, where you met, your view, next step, open promises, last 10 contacts |
+| `bu_hafta` | due next steps, neglected people, overdue/upcoming promises |
+| `son_gorusmeler` | contacts in the last N days |
+| `brifing` | one-page pre-meeting brief |
+
+**Privacy.** Whatever the assistant receives goes to its model provider (e.g. Anthropic), so MCP goes through Kut's person gate:
+people marked 🔒 *never sent to AI* or matching `haric.md` are never listed, lines mentioning them are dropped and secrets become `[gizlendi]`.
+Phone numbers and e-mail addresses are never returned. The server writes nothing. The PIN lock protects Kut's window; adding the MCP server
+means granting the assistant read access through these tools. Remove it from the client's settings when you no longer want that.
+
+**Claude Code:**
+```
+claude mcp add kut -- python3 ~/Kut/kut.pyw --mcp --veri ~/Documents/Kut
+```
+(Windows: `py -3 "C:\path\kut\kut.pyw" --mcp --veri "C:\path\data"`.)
+
+**Claude Desktop:** Settings → Developer → *Edit config* (`claude_desktop_config.json`):
+```json
+{"mcpServers": {"kut": {"command": "python3", "args": ["/path/to/Kut/kut.pyw", "--mcp", "--veri", "/path/to/data"]}}}
+```
+For now this works with the source (Python) install; `Kut.exe` is a windowed app and cannot act as a stdio server.
 
 ## Supported schools
 

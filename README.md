@@ -146,6 +146,7 @@ Verin `veri/` klasöründe düz Markdown olarak durur ve `.gitignore` ile depoda
 | OpenAlex / ORCID | api.openalex.org, pub.orcid.org (yalnız hocanın adı) | `kesif.akademik` açıksa (yeni kurulumda kapalı) |
 | Vekilpedia | vekilpedia.com | `kesif.vekilpedia` açıksa (yeni kurulumda kapalı) |
 | Etkinlikler | tablodaki etkinlik siteleri | `kesif.etkinlik` açıksa (yeni kurulumda kapalı) |
+| MCP istemcisi | bağladığın asistanın modeli (ör. Anthropic) | yalnız Kut'u bir MCP istemcisine sen eklersen ve asistan aracı çağırınca; kişi kapısından geçer, salt okur |
 | Uzak model sağlayıcıları | Anthropic (Claude Code), OpenAI (Codex), Google (Gemini); yerel Ollama hiçbir yere çıkmaz | yalnız sen analiz / "Kut'a sor" / strateji kullanınca; Codex ve Gemini seçilirken ayrıca onay istenir |
 
 **Ağa çıkmayanlar.** İçe aktarmalar (WhatsApp, rehber, takvim .ics, LinkedIn CSV/ZIP, yapıştırılan ders listesi) tamamen yerelde, bu bilgisayarda işlenir; yukarıdaki listede yoktur, çünkü hiçbir istek yapmazlar (takvim ve LinkedIn için hesabına bağlanma, gizli takvim adresi ya da kazıma yoktur). Kaynak dosyadaki talimatlar veridir, komut değildir. **Uygulamaya girmeyen geliştirici aracı:** `paketleme/demo_seslendir.py`, demo anlatım seslerini yayın öncesi bir kez Google Gemini TTS ile üretir (anahtar yalnız `GEMINI_API_KEY` ortam değişkeninden okunur, yalnız sabit demo metinleri gider, kişi verisi gitmez); `Kut.exe`'ye ve çalışan uygulamaya dahil değildir, Kut onu hiçbir zaman çalıştırmaz. Hazır ses dosyaları (`kut/demo_ses/`) uygulamayla yalnız çalınmak üzere gelir.
@@ -367,6 +368,36 @@ Tek doğru kaynak Markdown'dır (`veri/` klasörü; ayrıntı için `AGENTS.md`)
 Bu klasör aynı zamanda bir yapay zekâ ajanının çalışma alanıdır (`AGENTS.md` talimatları): Claude gibi bir ajanla klasörü açıp
 "Ali'yle kahve içtik, staj konuştuk, 2 hafta sonra yazacağım" dersen temas, yakınlık ve sonraki adım kaydedilir; "Bu hafta kimle ilgileneyim?" diye sorabilirsin.
 Ajan çıkarımlarını önerinin ötesinde kişi dosyasına doğrudan yazmaz.
+
+### Yapay zekâ asistanına bağla (MCP)
+Kut bir **MCP sunucusu** olarak da çalışır: Claude Desktop, Claude Code ya da MCP destekleyen başka bir asistan ağını **salt okur** araçlarla
+kullanır. "Yarın Deniz'le görüşeceğim, en son ne konuşmuştuk?" ya da "Bu hafta kimi ihmal ettim?" diye sorarsın; asistan Kut'a bakıp cevaplar.
+Ek paket gerekmez, port açılmaz, Kut'un penceresi açık olmak zorunda değildir.
+
+| Araç | Ne verir |
+|---|---|
+| `kisi_ara` | ada, kuruma, role ya da etikete göre kişiler (kimlik, yakınlık, son temas) |
+| `kisi_karti` | kurum, rol, nereden, görüşün, sonraki adım, açık sözler, son 10 temas |
+| `bu_hafta` | tarihi gelen adımlar, ihmal edilenler, gecikmiş/yaklaşan sözler |
+| `son_gorusmeler` | son N günün temasları |
+| `brifing` | görüşme öncesi tek sayfa |
+
+**Gizlilik.** Asistana giden her şey asistanın modeline (ör. Anthropic) gider; bu yüzden MCP de Kut'un kişi kapısından geçer:
+🔒 *yapay zekâya gönderilmez* işaretli ve `haric.md` ile eşleşen kişiler hiç listelenmez, adlarının geçtiği satırlar atılır, sırlar `[gizlendi]` olur.
+Telefon ve e-posta hiç verilmez. Sunucu hiçbir şey yazmaz. PIN kilidi Kut'un penceresini korur; MCP'yi eklemek, asistana bu araçlarla
+okuma izni vermek demektir. İstemediğinde istemcinin ayarından kaldır.
+
+**Claude Code:**
+```
+claude mcp add kut -- py -3 "C:\yol\kut\kut.pyw" --mcp --veri "C:\yol\veri"
+```
+(macOS/Linux: `python3 ~/Kut/kut.pyw --mcp --veri ~/Documents/Kut`.)
+
+**Claude Desktop:** Ayarlar → Geliştirici → *Yapılandırmayı düzenle* (`claude_desktop_config.json`):
+```json
+{"mcpServers": {"kut": {"command": "py", "args": ["-3", "C:\\yol\\kut\\kut.pyw", "--mcp", "--veri", "C:\\yol\\veri"]}}}
+```
+Şimdilik kaynaktan (Python ile) kurulumda çalışır; `Kut.exe` pencereli bir uygulama olduğu için stdio sunucusu olamaz.
 
 ## Desteklenen okullar
 

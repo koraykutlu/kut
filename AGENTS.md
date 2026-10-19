@@ -156,6 +156,11 @@ Hepsi yerel ve deterministiktir: model ve ağ yok (README "Ağa çıkabilen yoll
 - **Bildirim** (`ag_bildirim`): Ayarlar → *Kut sana gelsin*. **Varsayılan kapalı ve adsızdır**; zamanlanmış görev (`kut.pyw --ozet --veri X`, .exe'de `Kut.exe --ozet`) **yalnız kullanıcı anahtarı açınca kurulur**, kapatınca kaldırılır; sen ayarı kendiliğinden açma, test için bile gerçek Görev Zamanlayıcı'ya görev kurma (testlerde subprocess sahtedir). Bildirim yalnız sayı taşır; `adlar` açıksa en çok iki ilk ad ve uyarısı vardır; not, söz, taslak metni hiç girmez. Uçlar: `GET|POST /api/bildirim`, `POST /api/bildirim/dene`. `kut/ag_giris.py` giriş noktasıdır: `--ozet` sunucu modülünü yüklemez, `--veri` verilmişse varsayılan `<depo>/veri` iskeleti kurulmaz, taşınmış `--veri` klasörü yeniden yaratılmaz (çıkış kodu 2).
 - **Kapılar:** hepsi kilit + `X-Ag-Anahtar` ister; yazanlar (`/api/sonuc`, `/api/sonuc/kaydet`, `/api/ozet`, `/api/ozet/goruldu`, `/api/bildirim`, `/api/bildirim/dene`) ayrıca `KOKEN_DENETIMLI`. **Hariç kişi** hiçbir çıktıda (yol düğümü, brifing, özet maddesi, sonuç listesi, bildirim) yoktur; yol/brifing/kayıt için `400`. Girdi doğrulanır (kişi kimliği `c.gecerli_id`, metin uzunlukları, bilinmeyen alan 400). Demoda yalnız `/api/demo/yol` ve `/api/demo/brifing` çalışır (demo anahtarı, kapsül verisi); özet, sonuç ve bildirim "örnekte kapalı"dır.
 
+## MCP sunucusu (`ag_mcp.py`)
+`kut.pyw --mcp --veri X` stdio MCP sunucusudur (stdlib, bağımlılık yok): `kisi_ara`, `kisi_karti`, `bu_hafta`, `son_gorusmeler`, `brifing`. **Salt okurdur**; yazan araç
+eklemek ayrı bir tasarım kararıdır (onay akışı olmadan ekleme). Her araç çıktısı `Kapi` ile süzülür (kapalı/hariç kişi listelenmez, anıldığı satır atılır, sır süzgeci);
+telefon ve e-posta dönmez. stdout yalnız protokoldür, başka çıktı stderr'e. Yeni araç = `ARACLAR` + `ISLEV` + `tests/test_mcp.py`. README "Ağa çıkabilen yollar"da satırı var.
+
 ## Kilit (`ag_kilit.py`)
 Kilitliyken sunucu veri göndermez (kilit sunucu tarafında, yalnız görsel örtü değil). Yeni bir uç (GET/POST) eklerken kilit denetiminin
 önünde kalmasın; yalnız `/api/nabiz` ve `/api/kilit/ac|kur` kilitsizdir. Kilit açıkken veriyi kilitsiz dosyaya (ör. `ag.html`) yazma.
@@ -184,6 +189,11 @@ GÖNDERDİĞİ veriyi süzer, aracın kendi okuyuşunu süzemez. Bu yüzden bu i
 almadan seçme, hassas ağlar için Claude Code ya da Ollama öner. Kişi kapısı çağıranlarda (`Kapi`) aynen kalır; her istem (Claude'un `sistem` istemi dahil) `ag_sir.temizle`'den geçer. Hata iletilerinde "claude" yerine seçili sağlayıcının adı geçer (`mdl.hazir_degil_mesaji()`). Model adı bayrak olamaz (`MODEL_AD` doğrular).
 
 ## Sınırlar
+- **Herkese açık koda gerçek kişi verisi girmez.** Kod açıklaması, test, README, tasarım belgesi ve örnek veride yalnız kurgusal adlar
+  (Deniz Demo, Selin Hoca, Baran Sanalıoğlu, Mert Kurgusal, Ayla Kurgu, Kuzeyova Üniversitesi…); kullanıcının ekran görüntüsünden, veri klasöründen
+  ya da sohbetten gelen ad, soyad, e-posta asla kopyalanmaz. Yayın kopyasına aktarmadan önce `git archive` ağacı veri klasöründeki kişilerin
+  tam adları ve soyadlarıyla taranır; eşleşme varsa yayın durur, ad `tests/yerel_yasakli_adlar.txt`'e (yerel, depoya girmez) eklenir.
+  (16 Ekim 2026: bir gerçek kişinin tam adı v1.0.0'dan beri testlerde yayındaydı; v1.2.0'da kaldırıldı, eski geçmişte duruyor.)
 - **Proje ilkesi: yalnız bilgisayarda çalışır.** Bulut sunucusu, mobil uygulama, bot, uzaktan erişim, senkronizasyon servisi
   önerme ve ekleme. Yeni özellikler yerel dosya + 127.0.0.1 sunucusu içinde kalır. (Not: yapay zekâ ajanı okuduğu dosyaları
   modele gönderir; bu yüzden yalnız görev için gereken kişi dosyalarını oku.)

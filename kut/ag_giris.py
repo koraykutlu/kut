@@ -4,6 +4,8 @@
   * Sunucu: `ag_sunucu.main()` (tarayıcı penceresi, kısayol, `--veri`, `--port`, `--tarayicisiz`).
   * Zamanlanmış özet: `--ozet [--veri X] [--sessiz]` → `ag_bildirim.calistir` (özeti üretir, gerekiyorsa bildirir). Sunucu, tarayıcı ve gereksiz
     modüller hiç yüklenmez. Görev Zamanlayıcı/launchd/systemd bu komutu çalıştırır (yalnız kullanıcı Ayarlar'dan açınca kurulur).
+  * MCP sunucusu: `--mcp --veri X` → `ag_mcp.main` (stdio, salt okur). Yapay zekâ istemcisi bu komutu kendisi başlatır; sunucu ve tarayıcı açılmaz,
+    taşınmış `--veri` klasörü yeniden yaratılmaz.
 
 Veri klasörü: `ag_cekirdek` içe aktarılınca kendiliğinden bir veri iskeleti kurar. `--veri` verilmişse bu, içe aktarmadan ÖNCE `AGIM_VERI`'ye
 çevrilir ki varsayılan klasörde (`<depo>/veri`) istenmeyen bir iskelet oluşmasın. Zamanlanmış görevde klasör artık yoksa (taşınmış/silinmiş)
@@ -37,7 +39,14 @@ def ortam_hazirla(argv, ozet):
 def main(argv=None):
     argv = list(sys.argv if argv is None else argv)
     ozet = "--ozet" in argv[1:]
-    ortam_hazirla(argv[1:], ozet)
+    mcp = "--mcp" in argv[1:]
+    ortam_hazirla(argv[1:], ozet or mcp)
+    if mcp:
+        if os.environ.get("KUT_ISKELETSIZ"):
+            print("Kut MCP: veri klasörü bulunamadı.", file=sys.stderr)
+            return 2
+        import ag_mcp
+        return ag_mcp.main()
     if ozet:
         import ag_bildirim
         return ag_bildirim.calistir(argv)
