@@ -2151,7 +2151,7 @@ function ckDuzenAlani(r) {
 function sozCiz(k, ic) {
   const hepsi = k.sozler || [], ac = hepsi.filter(s => s.durum === "acik"), kapali = hepsi.filter(s => s.durum !== "acik");
   const yonAd = y => y === "ben" ? "verdiğin söz" : "aldığın söz";
-  const ac_li = s => `<li><div><b>${esc(s.metin)}</b><span>${esc(yonAd(s.yon))} · ${esc(s.tarih)}${s.son ? ` · son ${esc(s.son)}` : ""}${s.yazi ? ` · <span class="rz ${s.gun != null && s.gun > 0 ? "kirmizi" : ""}" style="display:inline-flex;padding:0 7px">${esc(s.yazi)}</span>` : ""}</span></div>
+  const ac_li = s => `<li><div><b>${esc(s.metin)}</b><span>${esc(yonAd(s.yon))} · ${esc(s.tarih)}${s.son ? ` · ${CEVIRI ? tx("son tarihi") : "son"} ${esc(s.son)}` : ""}${s.yazi ? ` · <span class="rz ${s.gun != null && s.gun > 0 ? "kirmizi" : ""}" style="display:inline-flex;padding:0 7px">${esc(s.yazi)}</span>` : ""}</span></div>
     ${MOD ? `<div class="dugmeler"><button class="kucuk" data-soz="tamam" data-i="${s.sira}">✓ Tamamla</button><button class="kucuk hayalet tehlike" data-soz="iptal" data-i="${s.sira}">İptal</button></div>` : ""}</li>`;
   const kapali_li = s => `<li class="kapali ${s.durum}"><div><b>${esc(s.metin)}</b><span>${esc(yonAd(s.yon))} · ${s.durum === "tamam" ? "tamamlandı" : "iptal"} ${esc(s.kapanis)}</span></div></li>`;
   ic.innerHTML = `
@@ -3911,8 +3911,8 @@ function karsilamaSatiri(d = new Date()) {   // sihirbaz için tek cümle
 }
 function donusKarsilama(d = new Date()) {   // sonraki açılışlarda tek satırlık bildirim
   const a = ilkAd();
-  if (dogumGunuMu(d)) return a ? `Doğum günün kutlu olsun, ${a}. Bugün senin günün.` : "Doğum günün kutlu olsun. Bugün senin günün.";
-  return `${DONUS_SELAM[gunDilimi(d)]}${a ? ", " + a : ""}. ${DONUS_CUMLE[gunNo(d) % DONUS_CUMLE.length]}`;
+  if (dogumGunuMu(d)) return a ? tx("Doğum günün kutlu olsun, {0}. Bugün senin günün.", a) : tx("Doğum günün kutlu olsun. Bugün senin günün.");
+  return `${tx(DONUS_SELAM[gunDilimi(d)])}${a ? ", " + a : ""}. ${tx(DONUS_CUMLE[gunNo(d) % DONUS_CUMLE.length])}`;   // parça parça çevrilir: ad araya girince birleşik cümle sözlükte yok
 }
 function kapanisSatiri() {   // özellik turu bitince: adıyla kısa kapanış
   const a = ilkAd();

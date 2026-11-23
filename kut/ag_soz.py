@@ -137,7 +137,9 @@ def hatirlatmalar(kisiler, bugun=None):
                 if not ver or (bugun - ver).days < TARIHSIZ_UYARI_GUN:
                     continue
                 oncelik = YAKLASAN_GUN + 1
-            liste.append({"id": k["id"], "neden": f"{ETIKET[s['yon']]}: {durum_yazisi(s, bugun)} · {s['metin'][:60]}", "oncelik": oncelik,
+            import ag_dil   # İngilizce arayüzde etiket ve durum İngilizce; kullanıcının söz metni çevrilmez (Türkçede aynen kalır)
+            neden = f"{ag_dil.cevir(ETIKET[s['yon']])}: {ag_dil.cevir(durum_yazisi(s, bugun))} · {s['metin'][:60]}"
+            liste.append({"id": k["id"], "neden": neden, "oncelik": oncelik,
                           "tur": "soz", "yon": s["yon"], "sira": s["sira"]})
     return liste
 

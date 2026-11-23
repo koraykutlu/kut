@@ -191,7 +191,8 @@ class KarsilamaVeSihirbazTest(unittest.TestCase):
         for ad in ("gunDilimi", "ilkAd", "dogumGunuMu", "karsilamaSatiri", "donusKarsilama", "kapanisSatiri"):
             parcalar.append("function " + ad + "(" + h.split("function " + ad + "(", 1)[1].split("\n}\n", 1)[0] + "\n}\n")
         parcalar.insert(1, h[h.index("const gunNo ="):h.index("\n", h.index("const gunNo ="))])
-        kod = ("let BEN = {};\n" + "\n".join(parcalar) + """
+        tx = "const tx = (s, ...a) => String(s).replace(/\\{(\\d+)\\}/g, (x, i) => a[i] ?? x);\n"   # Türkçe arayüz: metin aynen, {n} doldurulur
+        kod = ("let BEN = {};\n" + tx + "\n".join(parcalar) + """
 const sonuc = {};
 const saat = s => new Date(2026, 5, 10, s, 0, 0);
 sonuc.dilim = [3, 5, 10, 11, 16, 17, 21, 22, 23].map(s => gunDilimi(saat(s)));

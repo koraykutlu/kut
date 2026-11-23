@@ -1231,6 +1231,7 @@
 "söz metni boş": "promise text is empty",
 "bu söz zaten açık": "this promise is already open",
 "son tarih YYYY-AA-GG olmalı": "due date must be YYYY-MM-DD",
+"son tarihi": "due",
 "durum 'tamam' ya da 'iptal' olmalı": "status must be 'tamam' or 'iptal'",
 "söz zaten kapatılmış": "promise already closed",
 "söz değişmiş; sayfayı yenile": "the promise has changed; refresh the page",

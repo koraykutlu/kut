@@ -108,6 +108,16 @@ class CeviriKuralTest(unittest.TestCase):
         self.assertEqual(e("Aslı Rüyalı · köprü: Baran Sanalıoğlu"), "Aslı Rüyalı · via: Baran Sanalıoğlu")
         self.assertEqual(e("kaynak: sen"), "source: you")
 
+    def test_v142_bu_hafta_soz_satiri(self):
+        # "Bu hafta" söz satırı: etiket ve durum arayüz dilinde, kullanıcının söz metni çevrilmez
+        import ag_soz
+        from datetime import date
+        k = [{"id": "ayla-kurgu", "govde": "## Sözler\n- [ ] 2026-11-18 · ben → o · Kitabı gönder (son: 2026-11-22)\n"}]
+        with mock.patch.object(ag_dil, "etkin", lambda: "tr"):
+            self.assertEqual(ag_soz.hatirlatmalar(k, date(2026, 11, 23))[0]["neden"], "verdiğin söz: 1 gün gecikti · Kitabı gönder")
+        with mock.patch.object(ag_dil, "etkin", lambda: "en"):
+            self.assertEqual(ag_soz.hatirlatmalar(k, date(2026, 11, 23))[0]["neden"], "promise you made: 1 day overdue · Kitabı gönder")
+
     def test_v141_mesaj_taslaklari(self):
         # taslak yazı alanına girer (arayüz çevirmez): sunucu İngilizcede sözlükten çevirir, Türkçede aynen bırakır
         import ag_ozet
