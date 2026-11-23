@@ -180,7 +180,8 @@ def hitap(kisi):
 
 def _mesaj(h, sen, siz):
     """'sen' ya da 'siz' kalıbı: {selam} ve {ad} doldurulur. Kullanıcının kendi metni (not, adım, söz) kalıba hiç girmez."""
-    return (siz if h["siz_mi"] else sen).format(selam=h["selam"], ad=h["ad"])
+    import ag_dil   # İngilizce arayüzde taslak da İngilizce (yazı alanı arayüzde çevrilmez); Türkçede metin aynen kalır
+    return ag_dil.cevir((siz if h["siz_mi"] else sen).format(selam=h["selam"], ad=h["ad"]))
 
 
 def _adim_ve_taslak(k, a, tur):

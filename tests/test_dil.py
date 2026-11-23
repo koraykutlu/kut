@@ -94,6 +94,44 @@ class CeviriKuralTest(unittest.TestCase):
             ag_dil.cevir("Mert Kurgusal – Ayla Kurgu arasında: rakip. Birini diğerine referans gösterme, ikisini aynı işe birlikte çağırmadan önce düşün.", "en"),
             "Between Mert Kurgusal and Ayla Kurgu: rival. Don't cite one as a reference to the other; think twice before inviting both to the same thing.")
 
+    def test_v141_ozet_bildirim_brifing_pusula(self):
+        # v1.4.1: İngilizce arayüzde Türkçe kalan özet başlığı, bildirim, brifing ve Pusula parçaları
+        e = lambda s: ag_dil.cevir(s, "en")   # noqa: E731
+        self.assertEqual(e("Merhaba Deniz. Bu hafta 3 kişi seni bekliyor."), "Hello, Deniz. Waiting for you this week: 3 people.")
+        self.assertEqual(e("Bu hafta 1 kişi ve 1 söz seni bekliyor. Özet Kut'ta hazır."),
+                         "Waiting for you this week: 1 person and 1 promise. Your summary is ready in Kut.")
+        self.assertEqual(e("Bu hafta Ayla and Mert seni bekliyor (+2). 1 söz de var. Özet Kut'ta hazır."),
+                         "Waiting for you this week: Ayla and Mert (+2). Plus 1 promise. Your summary is ready in Kut.")
+        self.assertEqual(e("Ayla Kurgu (Kuzeyova) ile yakınlığınız 3; son temas 21 gün önce, bağ soğuyor."),
+                         "Your closeness with Ayla Kurgu (Kuzeyova): 3; last contact 21 days ago, link cooling.")
+        self.assertEqual(e("Yakınlık 3 · Güçlü"), "Closeness 3 · Strong")
+        self.assertEqual(e("Aslı Rüyalı · köprü: Baran Sanalıoğlu"), "Aslı Rüyalı · via: Baran Sanalıoğlu")
+        self.assertEqual(e("kaynak: sen"), "source: you")
+
+    def test_v141_mesaj_taslaklari(self):
+        # taslak yazı alanına girer (arayüz çevirmez): sunucu İngilizcede sözlükten çevirir, Türkçede aynen bırakır
+        import ag_ozet
+        import ag_yol
+        from datetime import date
+        h = {"selam": "Selam", "ad": "Kerem", "siz_mi": False}
+        sen, siz = "{selam} {ad}, nasılsın? Sana bir konuda dönecektim; uygun olduğunda kısa konuşalım mı?", "x"
+        with mock.patch.object(ag_dil, "etkin", lambda: "tr"):
+            self.assertEqual(ag_ozet._mesaj(h, sen, siz), "Selam Kerem, nasılsın? Sana bir konuda dönecektim; uygun olduğunda kısa konuşalım mı?")
+            tr = ag_yol._taslak(["Mert Kurgusal", "Ayla Kurgu"], None, "", date(2026, 11, 23), {"tur": "is", "yakinlik": 2})
+            self.assertTrue(tr.startswith("Selam Mert, nasılsın? Bir ricam olacak: Ayla ile tanışmak istiyorum."), tr)
+        with mock.patch.object(ag_dil, "etkin", lambda: "en"):
+            self.assertEqual(ag_ozet._mesaj(h, sen, siz),
+                             "Hi Kerem, how are you? I wanted to get back to you about something; could we talk briefly when you're free?")
+            en = ag_yol._taslak(["Mert Kurgusal", "Ayla Kurgu"], None, "", date(2026, 11, 23), {"tur": "is", "yakinlik": 2})
+            self.assertEqual(en, "Hi Mert, how are you? A small favour: I'd like to meet Ayla. I thought you might know them; "
+                                 "if you're comfortable, could you introduce us? I can write a short intro note if that helps.")
+            for isimler, amac, siz_mi in ((["Mert Kurgusal"], "", False), (["Mert Kurgusal"], "veri", False), (["Selin Hoca"], "veri", True),
+                                          (["Mert Kurgusal", "Ayla Kurgu"], "veri", False), (["Selin Hoca", "Ayla Kurgu"], "", True),
+                                          (["Mert Kurgusal", "Baran Sanalıoğlu", "Ayla Kurgu"], "", False),
+                                          (["Selin Hoca", "Baran Sanalıoğlu", "Ayla Kurgu"], "veri", True)):
+                t = ag_yol._taslak(isimler, None, amac, date(2026, 11, 23), {"tur": "akademi" if siz_mi else "is", "yakinlik": 2})
+                self.assertIsNone(re.search(r"\b(nasılsın|nasılsınız|ricam|Merhaba|Selam)\b", t), t)
+
     def test_markdown_satirlari(self):
         self.assertEqual(ag_dil.satirlar("# Selin Hoca\n- Kurum: Kuzeyova\n## Açık sözler", "en"), "# Selin Hoca\n- Organization: Kuzeyova\n## Open promises")
 

@@ -635,14 +635,17 @@ def metin(ozet, adlar=False, siklik="haftalik"):
     adlar_listesi = [x for x in (_ilk_ad(a) for _, a in kisiler[:2]) if x] if adlar is True else []
     if adlar_listesi:
         ek = f" (+{k_say - len(adlar_listesi)})" if k_say > len(adlar_listesi) else ""
-        govde = f"{zaman} {' ve '.join(adlar_listesi)} seni bekliyor{ek}." + (f" {s_say} söz de var." if s_say else "")
+        import ag_dil
+        ve = " and " if ag_dil.etkin() == "en" else " ve "   # adlar çevrilmez; bağlaç arayüz dilinde
+        govde = f"{zaman} {ve.join(adlar_listesi)} seni bekliyor{ek}." + (f" {s_say} söz de var." if s_say else "")
     elif k_say and s_say:
         govde = f"{zaman} {k_say} kişi ve {s_say} söz seni bekliyor."
     elif k_say:
         govde = f"{zaman} {k_say} kişi seni bekliyor."
     else:
         govde = f"{zaman} {s_say} söz seni bekliyor."
-    return "Kut", govde + " Özet Kut'ta hazır."
+    import ag_dil   # bildirim arayüz dilini izler (Türkçede metin aynen kalır)
+    return "Kut", ag_dil.cevir(govde + " Özet Kut'ta hazır.")
 
 
 # ---------- zamanlanmış çalışma ----------

@@ -419,6 +419,12 @@ def _selam_adi(ad, siz):
 
 
 def _taslak(isimler, son, amac, bugun, kisi=None):
+    """Mesaj taslağı; İngilizce arayüzde sözlükten İngilizcesi (yazı alanı arayüzde çevrilmez), Türkçede metin aynen kalır."""
+    import ag_dil
+    return ag_dil.cevir(_taslak_tr(isimler, son, amac, bugun, kisi))
+
+
+def _taslak_tr(isimler, son, amac, bugun, kisi=None):
     """isimler: yol üzerindeki kişilerin (merkez hariç) tam adları, hedef sonda; son: ilk adımın son temas tarihi;
     kisi: mesajın gideceği kişinin kaydı (ilk adım; doğrudan durumda hedef) → hitap kipi."""
     siz = _hitap(kisi, isimler[0]) == "siz"
